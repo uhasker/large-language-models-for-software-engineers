@@ -1,0 +1,4 @@
+__pycache__
+.env
+book
+.ruff_cache

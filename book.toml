@@ -1,0 +1,5 @@
+[book]
+authors = ["uhasker"]
+language = "en"
+src = "src"
+title = "Large Language Models for Software Engineers"
