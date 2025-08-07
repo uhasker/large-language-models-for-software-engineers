@@ -74,7 +74,7 @@ $$
 \text{similarity}(\vec{v}, \vec{w}) = \cos(\theta) = \frac{\vec{v} \cdot \vec{w}}{\|\vec{v}\| \|\vec{w}\|}
 $$
 
-where $\theta$ is the angle between the vectors $\vec{v}$ and $\vec{w}$, $\vec{v} \cdot \vec{w}$ is the dot product of the vectors and $\|\vec{v}\|$ and $\|\vec{w}\|$ are their norms.
+where \\(\theta\\) is the angle between the vectors \\(\vec{v}\\) and \\(\vec{w}\\), \\(\vec{v} \cdot \vec{w}\\) is the dot product of the vectors and \\(\|\vec{v}\|\\) and \\(\|\vec{w}\|\\) are their norms.
 
 As a reminder, the dot product (also called the inner product) of two vectors is defined as:
 
@@ -175,12 +175,12 @@ One of the most widely used algorithms for efficient similarity search is **IVFF
 The IVFFlat algorithm works by partitioning the embedding space into cells with centroids.
 At search time, the algorithm first finds the nearest centroids and then performs a search only inside those cells.
 
-In other words, the algorithm performs the following steps to find the best embeddings for a query embedding $\vec{v}$:
+In other words, the algorithm performs the following steps to find the best embeddings for a query embedding \\(\vec{v}\\):
 
-1. Calculate the distance between $\vec{v}$ and all centroids.
-2. Find the $k$ centroids with the smallest distance to $\vec{v}$.
-3. Calculate the distance between $\vec{v}$ and all embeddings within the cells corresponding to the $k$ centroids from step 2.
-4. Return the embeddings with the smallest distance to $\vec{v}$.
+1. Calculate the distance between \\(\vec{v}\\) and all centroids.
+2. Find the \\(k\\) centroids with the smallest distance to \\(\vec{v}\\).
+3. Calculate the distance between \\(\vec{v}\\) and all embeddings within the cells corresponding to the \\(k\\) centroids from step 2.
+4. Return the embeddings with the smallest distance to \\(\vec{v}\\).
 
 The cells and their centroids must be learned from the data in advance, which is why we typically build the index only after inserting some initial data.
 

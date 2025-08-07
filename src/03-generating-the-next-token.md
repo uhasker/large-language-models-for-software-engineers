@@ -172,10 +172,10 @@ $$
 
 where:
 
-- $P(x_i)$ is the raw probability of the token $x_i$ as produced by the model,
-- $T$ is the temperature,
-- $n$ is the total number of tokens and
-- $Q(x_i)$ is the adjusted probability of the token $x_i$.
+- \\(P(x_i)\\) is the raw probability of the token \\(x_i\\) as produced by the model,
+- \\(T\\) is the temperature,
+- \\(n\\) is the total number of tokens and
+- \\(Q(x_i)\\) is the adjusted probability of the token \\(x_i\\).
 
 In Python, we can implement this as:
 
@@ -221,7 +221,7 @@ $$
 Q(x_i) = \frac{P(x_i)^S}{\sum_{j=1}^{n} P(x_j)^S}
 $$
 
-where $S = \frac{1}{T} > 1$.
+where \\(S = \\frac{1}{T} > 1\\).
 
 Therefore, each probability is raised to a power greater than 1.
 This disproportionately suppresses lower-probability values.
@@ -235,7 +235,7 @@ $$
 Q(x_i) = \frac{P(x_i)^S}{\sum_{j=1}^{n} P(x_j)^S}
 $$
 
-where $S = \frac{1}{T} < 1$.
+where \\(S = \\frac{1}{T} < 1\\).
 
 In this scenario, every probability will be raised to a power smaller than 1.
 This boosts the lower values relative to the higher ones.
@@ -263,7 +263,7 @@ $$
 Q(x_i) = \frac{\exp(\frac{\log(P(x_i))}{T})}{\sum_{j=1}^{n} \exp(\frac{\log(P(x_j))}{T})}
 $$
 
-Letting $z_i = \log(P(x_i))$ we get:
+Letting \\(z_i = \log(P(x_i))\\) we get:
 
 $$
 Q(x_i) = \frac{\exp(\frac{z_i}{T})}{\sum_{j=1}^{n} \exp(\frac{z_j}{T})}
