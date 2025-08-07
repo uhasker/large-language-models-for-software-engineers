@@ -1,0 +1,572 @@
+<!DOCTYPE HTML>
+<html lang="en" class="light sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Generating the Next Token - Large Language Models for Software Engineers</title>
+
+
+        <!-- Custom HTML head -->
+
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="favicon.svg">
+        <link rel="shortcut icon" href="favicon.png">
+        <link rel="stylesheet" href="css/variables.css">
+        <link rel="stylesheet" href="css/general.css">
+        <link rel="stylesheet" href="css/chrome.css">
+        <link rel="stylesheet" href="css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="highlight-css" href="highlight.css">
+        <link rel="stylesheet" id="tomorrow-night-css" href="tomorrow-night.css">
+        <link rel="stylesheet" id="ayu-highlight-css" href="ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+
+        <!-- MathJax -->
+        <script async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+        <!-- Provide site root and default themes to javascript -->
+        <script>
+            const path_to_root = "";
+            const default_light_theme = "light";
+            const default_dark_theme = "navy";
+            window.path_to_searchindex_js = "searchindex.js";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="toc.js"></script>
+    </head>
+    <body>
+    <div id="mdbook-help-container">
+        <div id="mdbook-help-popup">
+            <h2 class="mdbook-help-title">Keyboard shortcuts</h2>
+            <div>
+                <p>Press <kbd>←</kbd> or <kbd>→</kbd> to navigate between chapters</p>
+                <p>Press <kbd>S</kbd> or <kbd>/</kbd> to search in the book</p>
+                <p>Press <kbd>?</kbd> to show this help</p>
+                <p>Press <kbd>Esc</kbd> to hide this help</p>
+            </div>
+        </div>
+    </div>
+    <div id="body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+                sidebar_toggle.checked = false;
+            }
+            if (sidebar === 'visible') {
+                sidebar_toggle.checked = true;
+            } else {
+                html.classList.remove('sidebar-visible');
+            }
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="toc.html"></iframe>
+            </noscript>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </label>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="default_theme">Auto</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Large Language Models for Software Engineers</h1>
+
+                    <div class="right-buttons">
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <div class="search-wrapper">
+                            <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                            <div class="spinner-wrapper">
+                                <i class="fa fa-spinner fa-spin"></i>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="generating-the-next-token"><a class="header" href="#generating-the-next-token">Generating the Next Token</a></h1>
+<h2 id="a-list-of-probabilities"><a class="header" href="#a-list-of-probabilities">A List of Probabilities</a></h2>
+<p>In the previous chapter, we have learned that LLMs generate text one token at a time.
+So, how does the model decide which token to generate next?</p>
+<p>Behind the scenes, the LLM produces a list of all possible next tokens, each paired with its probability.
+For example, given the input "How are you? I am ", the model might produce a list like this:</p>
+<ul>
+<li><code>fine</code> paired with probability 0.7</li>
+<li><code>good</code> paired with probability 0.2</li>
+<li><code>bad</code> paired with probability 0.1</li>
+</ul>
+<p>Because the list includes every token in the model's vocabulary, it tends to be quite large.</p>
+<p>Technically, the list contains <strong>log probabilities</strong>—that is, the logarithms of the actual probabilities.
+This approach is more numerically stable than working with raw probabilities.
+To convert a log probability back to a probability, you simply exponentiate it:</p>
+<pre><code class="language-python">import math
+
+original_prob = 0.7
+logprob = math.log(original_prob)
+prob = math.exp(logprob)
+
+print(f"Original probability: {original_prob}")
+print(f"Log probability: {logprob}")
+print(f"Reconstructed probability: {prob}")
+</code></pre>
+<p>This will output:</p>
+<pre><code>Original probability: 0.7
+Log probability: -0.35667494393873245
+Reconstructed probability: 0.7
+</code></pre>
+<p>The OpenAI API lets you retrieve the top log probabilities for the next token, given a prompt:</p>
+<pre><code class="language-python">import math
+import os, requests
+
+response = requests.post(
+    "https://api.openai.com/v1/chat/completions",
+    headers={
+        "Authorization": f"Bearer {os.getenv('OPENAI_API_KEY')}",
+        "Content-Type": "application/json",
+    },
+    json={
+        "model": "gpt-4o",
+        "messages": [
+            {"role": "user", "content": "How are you?"}
+        ],
+        "logprobs": True,
+        "top_logprobs": 5
+    }
+)
+
+response_json = response.json()
+logprobs = response_json["choices"][0]["logprobs"]
+next_token_logprobs = logprobs["content"][0]["top_logprobs"]
+
+for item in next_token_logprobs:
+    token, logprob = item["token"], item["logprob"]
+    prob = math.exp(logprob)
+    print(token, prob)
+</code></pre>
+<p>This will output something along the lines of:</p>
+<pre><code>Thank 0.903825743563041
+I'm 0.09526252257393902
+I 0.0004998919591426934
+Thanks 0.0003893162492314283
+Hello 1.9382905474713714e-05
+</code></pre>
+<p>This means the model predicts <code>Thank</code> as the next token with a probability of 0.90, <code>I'm</code> with 0.09, and so on.</p>
+<h2 id="sampling-from-the-list"><a class="header" href="#sampling-from-the-list">Sampling from the List</a></h2>
+<p>Now that we have a list of probabilities, how do we use it to generate the next token?</p>
+<p>The simplest approach is to use <strong>greedy sampling</strong>.
+This simply means selecting the token with the highest probability:</p>
+<pre><code class="language-python">def greedy_sample(logprobs):
+    return max(logprobs, key=lambda item: item["prob"])
+
+next_token_logprobs = [
+    {"token": "Apple", "prob": 0.6},
+    {"token": "Banana", "prob": 0.3},
+    {"token": "Cherry", "prob": 0.1},
+]
+print(greedy_sample(next_token_logprobs))
+</code></pre>
+<p>This will output:</p>
+<pre><code>{'token': 'Apple', 'prob': 0.6}
+</code></pre>
+<p>Another approach is to actually sample from the list.
+This involves randomly selecting a token from the list, with each token weighted by its probability.
+The higher the probability, the more likely the token will be selected.</p>
+<pre><code class="language-python">import random
+from collections import defaultdict
+
+def sample_from_list(logprobs):
+    return random.choices(logprobs, weights=[item["prob"] for item in logprobs], k=1)[0]
+
+next_token_logprobs = [
+    {"token": "Apple", "prob": 0.6},
+    {"token": "Banana", "prob": 0.3},
+    {"token": "Cherry", "prob": 0.1},
+]
+
+counts = defaultdict(int)
+for _ in range(1000):
+    counts[sample_from_list(next_token_logprobs)["token"]] += 1
+
+print(counts)
+</code></pre>
+<p>This will output something along the lines of:</p>
+<pre><code>{'Apple': 598, 'Banana': 303, 'Cherry': 99}
+</code></pre>
+<p>Note how the counts of every token are roughly proportional to their probabilities.</p>
+<p>Greedy sampling has a few clear advantages: it's simple, fast, and fully deterministic.
+Nevertheless, it comes with a downside: it always selects the most likely token—even when that token's probability is relatively low.
+As a result, greedy sampling is often associated with repetitive output.</p>
+<p>This concern was highlighted in the famous paper <a href="https://arxiv.org/pdf/1904.09751">The Curious Case of Neural Text Degeneration</a> which shows that greedy sampling—and its close relative, beam search—often leads to repetitive text.
+However, that study focused on GPT-2, a model that is outdated by today's standards.</p>
+<p>More recent research paints a more nuanced picture.
+For instance, <a href="https://arxiv.org/pdf/2407.10457">The Good, The Bad, and The Greedy: Evaluation of LLMs Should Not Ignore Non-Determinism</a> found that greedy sampling actually outperformed more complex methods in some cases.
+Similarly, <a href="https://arxiv.org/pdf/2402.06925">A Thorough Examination of Decoding Methods in the Era of LLMs</a> argues that no single sampling method is the best—it all depends on the task at hand.
+In practice, that does seem to hold true.</p>
+<p>In short, while probabilistic sampling is typically the default, greedy sampling can be a reasonable—and at times even preferable—alternative.</p>
+<p>The discussion around greedy sampling and probabilistic sampling highlights just how shaky the foundations of LLMs are and how quickly the field moves.
+We still lack a definitive answer to something as basic as the best sampling method—let alone more complex questions.</p>
+<h2 id="the-temperature-parameter"><a class="header" href="#the-temperature-parameter">The Temperature Parameter</a></h2>
+<p>The temperature parameter plays a key role in probabilistic sampling.
+It controls the randomness of the output: higher temperatures lead to more varied, random responses, while lower temperatures make the model behave more deterministically.</p>
+<p>Conceptually, temperature reshapes the probability distribution from which we sample.
+Instead of sampling directly from the raw probabilities generated by the model, we adjust them—either concentrating more heavily on high-probability tokens (low temperature) or flattening the distribution to give low-probability tokens a better chance (high temperature).</p>
+<p>The actual formula looks like this:</p>
+<p>$$
+Q(x_i) = \frac{P(x_i)^\frac{1}{T}}{\sum_{j=1}^{n} P(x_j)^\frac{1}{T}}
+$$</p>
+<p>where:</p>
+<ul>
+<li>\(P(x_i)\) is the raw probability of the token \(x_i\) as produced by the model,</li>
+<li>\(T\) is the temperature,</li>
+<li>\(n\) is the total number of tokens and</li>
+<li>\(Q(x_i)\) is the adjusted probability of the token \(x_i\).</li>
+</ul>
+<p>In Python, we can implement this as:</p>
+<pre><code class="language-python">def apply_temperature(probs, temperature):
+    sum_denominator = sum(prob ** (1 / temperature) for prob in probs)
+    return [prob ** (1 / temperature) / sum_denominator for prob in probs]
+</code></pre>
+<p>Before diving into the math, let's look at a simple example:</p>
+<pre><code class="language-python">def round_probs(probs):
+    return [round(prob, 2) for prob in probs]
+
+probs = [0.6, 0.3, 0.1]
+print(round_probs(apply_temperature(probs, 0.1))) # [1.0, 0.0, 0.0]
+print(round_probs(apply_temperature(probs, 0.5))) # [0.78, 0.2, 0.02]
+print(round_probs(apply_temperature(probs, 1))) # [0.6, 0.3, 0.1]
+print(round_probs(apply_temperature(probs, 2))) # [0.47, 0.33, 0.19]
+</code></pre>
+<p>Here's what we observe:</p>
+<ul>
+<li>A temperature of 1 leaves the probabilities unchanged.</li>
+<li>Temperatures below 1 make the distribution more peaked—concentrating on the most likely tokens.</li>
+<li>Temperatures above 1 make the distribution flatter—spreading out probability mass across more tokens.</li>
+</ul>
+<p>Importantly, the relative ranking of tokens remains unchanged—only the probabilities are rescaled.</p>
+<p>This makes sense when we look back at the formula.
+For T = 1, we get:</p>
+<p>$$
+Q(x_i) = \frac{P(x_i)}{\sum_{j=1}^{n} P(x_j)} = P(x_i)
+$$</p>
+<p>Therefore, applying a temperature of T = 1 leaves the probabilities unchanged.</p>
+<p>For T &lt; 1, we get:</p>
+<p>$$
+Q(x_i) = \frac{P(x_i)^S}{\sum_{j=1}^{n} P(x_j)^S}
+$$</p>
+<p>where \(S = \frac{1}{T} &gt; 1\).</p>
+<p>Therefore, each probability is raised to a power greater than 1.
+This disproportionately suppresses lower-probability values.</p>
+<p>For example, <code>0.9 ** 10</code> is approximately <code>0.35</code> while <code>0.1 ** 10</code> is approximately <code>1e-10</code> meaning that the smaller probability is effectively eliminated from the distribution.</p>
+<p>The opposite is true for T &gt; 1.
+Here we get:</p>
+<p>$$
+Q(x_i) = \frac{P(x_i)^S}{\sum_{j=1}^{n} P(x_j)^S}
+$$</p>
+<p>where \(S = \frac{1}{T} &lt; 1\).</p>
+<p>In this scenario, every probability will be raised to a power smaller than 1.
+This boosts the lower values relative to the higher ones.</p>
+<p>For example, <code>0.9 ** 0.1</code> is approximately <code>0.99</code> while <code>0.1 ** 0.1</code> is approximately <code>0.8</code> meaning that the smaller probability gets much more weight in the distribution than before.</p>
+<p>With the math out of the way, here's the key takeaway:</p>
+<ul>
+<li>A temperature of 1 leaves the probabilities unchanged.</li>
+<li>A temperature smaller than 1 makes the probabilities more concentrated on the most likely tokens leading to more deterministic output.</li>
+<li>A temperature larger than 1 makes the probabilities more uniform leading to more random output.</li>
+</ul>
+<p><img src="images/temperature.png" alt="Temperature" /></p>
+<p>In practice, we use log probabilities rather than raw probabilities, primarily for numerical stability.
+So, instead of rescaling the probabilities, we rescale the log probabilities:</p>
+<p>$$
+Q(x_i) = \frac{P(x_i)^\frac{1}{T}}{\sum_{j=1}^{n} P(x_j)^\frac{1}{T}} = \frac{(\exp(\log(P(x_i)))^\frac{1}{T}}{\sum_{j=1}^{n} (\exp(\log(P(x_j)))^\frac{1}{T}}
+$$</p>
+<p>This is equivalent to:</p>
+<p>$$
+Q(x_i) = \frac{\exp(\frac{\log(P(x_i))}{T})}{\sum_{j=1}^{n} \exp(\frac{\log(P(x_j))}{T})}
+$$</p>
+<p>Letting \(z_i = \log(P(x_i))\) we get:</p>
+<p>$$
+Q(x_i) = \frac{\exp(\frac{z_i}{T})}{\sum_{j=1}^{n} \exp(\frac{z_j}{T})}
+$$</p>
+<p>This is the formulation of the temperature parameter you will see most often in the literature.</p>
+<p>We can implement this in Python as follows:</p>
+<pre><code class="language-python">def apply_temperature(logprobs, temperature):
+    sum_denominator = sum(math.exp(logprob / temperature) for logprob in logprobs)
+    return [math.exp(logprob / temperature) / sum_denominator for logprob in logprobs]
+</code></pre>
+<p>Let's use this function in a simple example:</p>
+<pre><code class="language-python">logprobs = [math.log(0.6), math.log(0.3), math.log(0.1)]
+print(round_probs(apply_temperature(logprobs, 0.1))) # [1.0, 0.0, 0.0]
+print(round_probs(apply_temperature(logprobs, 0.5))) # [0.78, 0.2, 0.02]
+print(round_probs(apply_temperature(logprobs, 1))) # [0.6, 0.3, 0.1]
+print(round_probs(apply_temperature(logprobs, 2))) # [0.47, 0.33, 0.19]
+</code></pre>
+<p>The results are the same as before.</p>
+<p>So, how should you choose the optimal temperature?
+Once again, it depends on the task—and there's little rigorous research on how to choose the “best” temperature.</p>
+<p>Even OpenAI doesn't offer a definitive recommendation.
+To quote from the <a href="https://arxiv.org/pdf/2303.08774">GPT-4 technical report</a>:</p>
+<blockquote>
+<p>Due to the longer iteration time of human expert grading, we did no methodology iteration on temperature or prompt, instead we simply ran these free response questions each only a single time at our best-guess temperature (0.6) and prompt.</p>
+</blockquote>
+<p>As of the time of this writing, the OpenAI API defaults to a temperature of 1.
+In actual applications, people often use values of 0.4 or 0.7, but this isn't really backed by any theory either.</p>
+<p>Generally speaking, some people say that:</p>
+<ul>
+<li>lower temperatures (<code>T &lt;= 0.7</code>) are suitable for tasks requiring precision and reliability, e.g. factual question answering</li>
+<li>moderate temperatures (<code>0.7 &lt; T &lt;= 1</code>) are suitable for general-purpose conversations where you need reliability but also some degree of creativity, e.g. for a chat bot</li>
+<li>higher temperatures (<code>T &gt; 1</code>) are suitable for creative endeavors, e.g. for storytelling or brainstorming</li>
+</ul>
+<p>Again, this has practically no rigorous theoretical basis and seems to just be something application developers have empirically converged on.
+So take these values with a grain of salt—or rather, a full salt mill.
+In real-world scenarios, you will have to experiment with different temperatures to find the one that works best for your task.</p>
+<p>An interesting edge case is T = 0.
+Technically, this is undefined because we divide by zero in the formula.
+Usually, this edge case is treated as roughly equivalent to greedy sampling and models will try to pick the most likely token.
+This aligns with the general intuition: lower temperatures yield more deterministic outputs.</p>
+<blockquote>
+<p>Note that the OpenAI API will not return fully deterministic results even for T = 0.
+The reasons for this are complicated and beyond the scope of this book.</p>
+</blockquote>
+<h2 id="top-k-and-top-p-sampling"><a class="header" href="#top-k-and-top-p-sampling">Top-K and Top-P Sampling</a></h2>
+<p>So far, we have covered greedy sampling and probabilistic sampling.</p>
+<p>Greedy sampling is deterministic and always picks the most likely token.
+Probabilistic sampling is non-deterministic and picks a token from the distribution potentially adjusted by the temperature parameter.</p>
+<p>Sometimes, we want a middle ground: sampling probabilistically while constraining the selection to avoid low-quality tokens.</p>
+<p>In <strong>top-k sampling</strong>, we consider only the top k most probable tokens and then sample from this restricted set:</p>
+<pre><code class="language-python">import random
+
+def sample_top_k(probabilities, k):
+    top_k_probabilities = sorted(probabilities, key=lambda item: item["prob"], reverse=True)[:k]
+    return random.choices(top_k_probabilities, weights=[item["prob"] for item in top_k_probabilities], k=1)[0]
+</code></pre>
+<p>Let's use this function in a simple example:</p>
+<pre><code class="language-python">from collections import defaultdict
+
+probabilities = [
+    {"token": "Apple", "prob": 0.5},
+    {"token": "Banana", "prob": 0.3},
+    {"token": "Cherry", "prob": 0.1},
+    {"token": "Durian", "prob": 0.05},
+    {"token": "Elderberry", "prob": 0.05},
+]
+
+counts = defaultdict(int)
+for _ in range(1000):
+    counts[sample_top_k(probabilities, k=3)["token"]] += 1
+
+print(counts)
+</code></pre>
+<p>This will output something like:</p>
+<pre><code>{'Cherry': 110, 'Banana': 312, 'Apple': 578}
+</code></pre>
+<p>Note that we only select from the top 3 tokens—everything else is ignored.</p>
+<p>The parameter k is a hyperparameter that you can tune for your task.
+The higher k is, the more diverse the output will be.</p>
+<p>Top-k sampling is a simple and effective way to limit the tokens considered.
+However, since k is fixed, it can be problematic: in some cases, the top k tokens may capture 99% of the probability mass, while in others, only 30%.</p>
+<p>To address this, we can use <strong>top-p sampling</strong> (also known as nucleus sampling).</p>
+<p>In top-p sampling, we include just enough tokens to capture a certain probability mass p.
+We then sample from this set:</p>
+<pre><code class="language-python">import random
+
+def sample_top_p(probabilities, p):
+    sorted_probabilities = sorted(probabilities, key=lambda item: item["prob"], reverse=True)
+    top_p_probabilities = []
+    cumulative_prob = 0
+    for item in sorted_probabilities:
+        top_p_probabilities.append(item)
+        cumulative_prob += item["prob"]
+        if cumulative_prob &gt;= p:
+            break
+    return random.choices(top_p_probabilities, weights=[item["prob"] for item in top_p_probabilities], k=1)[0]
+</code></pre>
+<p>Let's use this function in a simple example:</p>
+<pre><code class="language-python">logprobs = [
+    {"token": "Apple", "prob": 0.5},
+    {"token": "Banana", "prob": 0.3},
+    {"token": "Cherry", "prob": 0.1},
+    {"token": "Durian", "prob": 0.05},
+    {"token": "Elderberry", "prob": 0.05},
+]
+
+counts = defaultdict(int)
+for _ in range(1000):
+    counts[sample_top_p(logprobs, p=0.9)["token"]] += 1
+
+print(counts)
+</code></pre>
+<p>This will output something like:</p>
+<pre><code>{'Banana': 356, 'Apple': 531, 'Cherry': 113}
+</code></pre>
+<p>Note that we include only the top tokens whose cumulative probability meets or exceeds p.</p>
+<p>As with k, p is a tunable hyperparameter.
+The higher p is, the more diverse the output will be.</p>
+<p>In practice, top-p sampling is often preferred over top-k because it's adaptive—it dynamically includes enough high-probability tokens to capture most of the probability mass.</p>
+<p>You can specify the value of p using the <code>top_p</code> parameter in the OpenAI API:</p>
+<pre><code class="language-python">import os, requests
+
+response = requests.post(
+    "https://api.openai.com/v1/chat/completions",
+    headers={
+        "Authorization": f"Bearer {os.getenv('OPENAI_API_KEY')}",
+        "Content-Type": "application/json",
+    },
+    json={
+        "model": "gpt-4o",
+        "messages": [
+            {"role": "user", "content": "How are you?"}
+        ],
+        "top_p": 0.9
+    }
+)
+
+response_json = response.json()
+content = response_json["choices"][0]["message"]["content"]
+print(content)
+</code></pre>
+<p>It is generally recommended to specify either the <code>temperature</code> or the <code>top_p</code> parameter, but not both.</p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="02-tokenization.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+
+                            <a rel="next prefetch" href="04-embeddings.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="02-tokenization.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+
+                    <a rel="next prefetch" href="04-embeddings.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="elasticlunr.min.js"></script>
+        <script src="mark.min.js"></script>
+        <script src="searcher.js"></script>
+
+        <script src="clipboard.min.js"></script>
+        <script src="highlight.js"></script>
+        <script src="book.js"></script>
+
+        <!-- Custom JS scripts -->
+
+
+
+    </div>
+    </body>
+</html>

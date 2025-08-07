@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+     width="1200" height="2400" viewBox="0 0 1200 2400">
+<defs>
+</defs>
+<rect x="0" y="0" width="1200" height="2400" fill="#FFFFFF" />
+<text x="50" y="50" font-size="24" font-weight="bold" fill="#000000">Color Palette</text>
+<text x="50" y="100" font-size="20" font-weight="bold" fill="#3E63DD">1. Primary accent — "Soft Indigo"</text>
+<rect x="50" y="140" width="300" height="60" fill="#EEF4FF" stroke="#000000" stroke-width="1" />
+<text x="60" y="160" font-size="16" font-weight="bold" fill="#000000">indigo-100</text>
+<text x="60" y="175" font-size="14" fill="#333333">#EEF4FF</text>
+<text x="370" y="170" font-size="12" fill="#666666">very light call-out background, inline code bg</text>
+<rect x="50" y="210" width="300" height="60" fill="#DDE7FF" stroke="#000000" stroke-width="1" />
+<text x="60" y="230" font-size="16" font-weight="bold" fill="#000000">indigo-200</text>
+<text x="60" y="245" font-size="14" fill="#333333">#DDE7FF</text>
+<text x="370" y="240" font-size="12" fill="#666666">hover bg, subtle HR line</text>
+<rect x="50" y="280" width="300" height="60" fill="#BBCEFF" stroke="#000000" stroke-width="1" />
+<text x="60" y="300" font-size="16" font-weight="bold" fill="#000000">indigo-300</text>
+<text x="60" y="315" font-size="14" fill="#333333">#BBCEFF</text>
+<text x="370" y="310" font-size="12" fill="#666666">charts fills, badges</text>
+<rect x="50" y="350" width="300" height="60" fill="#99B4FF" stroke="#000000" stroke-width="1" />
+<text x="60" y="370" font-size="16" font-weight="bold" fill="#000000">indigo-400</text>
+<text x="60" y="385" font-size="14" fill="#333333">#99B4FF</text>
+<text x="370" y="380" font-size="12" fill="#666666">secondary buttons, links on dark surfaces</text>
+<rect x="50" y="420" width="300" height="60" fill="#3E63DD" stroke="#000000" stroke-width="1" />
+<text x="60" y="440" font-size="16" font-weight="bold" fill="#000000">indigo-500</text>
+<text x="60" y="455" font-size="14" fill="#333333">#3E63DD</text>
+<text x="370" y="450" font-size="12" fill="#666666">headings, CTAs, pull-quotes</text>
+<rect x="50" y="490" width="300" height="60" fill="#2C4DBA" stroke="#000000" stroke-width="1" />
+<text x="60" y="510" font-size="16" font-weight="bold" fill="#000000">indigo-600</text>
+<text x="60" y="525" font-size="14" fill="#333333">#2C4DBA</text>
+<text x="370" y="520" font-size="12" fill="#666666">active CTA / link hover</text>
+<rect x="50" y="560" width="300" height="60" fill="#1B3796" stroke="#000000" stroke-width="1" />
+<text x="60" y="580" font-size="16" font-weight="bold" fill="#000000">indigo-700</text>
+<text x="60" y="595" font-size="14" fill="#333333">#1B3796</text>
+<text x="370" y="590" font-size="12" fill="#666666">focus ring, borders on light cards</text>
+<rect x="50" y="630" width="300" height="60" fill="#102571" stroke="#000000" stroke-width="1" />
+<text x="60" y="650" font-size="16" font-weight="bold" fill="#000000">indigo-800</text>
+<text x="60" y="665" font-size="14" fill="#333333">#102571</text>
+<text x="370" y="660" font-size="12" fill="#666666">dark-mode body text</text>
+<rect x="50" y="700" width="300" height="60" fill="#08154D" stroke="#000000" stroke-width="1" />
+<text x="60" y="720" font-size="16" font-weight="bold" fill="#000000">indigo-900</text>
+<text x="60" y="735" font-size="14" fill="#333333">#08154D</text>
+<text x="370" y="730" font-size="12" fill="#666666">dark-mode background blocks</text>
+<text x="50" y="820" font-size="20" font-weight="bold" fill="#DDB88E">2. Secondary accent — "Muted Sand"</text>
+<rect x="50" y="860" width="300" height="60" fill="#FFFBF6" stroke="#000000" stroke-width="1" />
+<text x="60" y="880" font-size="16" font-weight="bold" fill="#000000">sand-100</text>
+<text x="60" y="895" font-size="14" fill="#333333">#FFFBF6</text>
+<text x="370" y="890" font-size="12" fill="#666666">article intro, footnotes bg</text>
+<rect x="50" y="930" width="300" height="60" fill="#FFF6EE" stroke="#000000" stroke-width="1" />
+<text x="60" y="950" font-size="16" font-weight="bold" fill="#000000">sand-200</text>
+<text x="60" y="965" font-size="14" fill="#333333">#FFF6EE</text>
+<text x="370" y="960" font-size="12" fill="#666666">call-out bg, quote block bg</text>
+<rect x="50" y="1000" width="300" height="60" fill="#FEECD9" stroke="#000000" stroke-width="1" />
+<text x="60" y="1020" font-size="16" font-weight="bold" fill="#000000">sand-300</text>
+<text x="60" y="1035" font-size="14" fill="#333333">#FEECD9</text>
+<text x="370" y="1030" font-size="12" fill="#666666">chart fills, soft tags</text>
+<rect x="50" y="1070" width="300" height="60" fill="#F2D5B2" stroke="#000000" stroke-width="1" />
+<text x="60" y="1090" font-size="16" font-weight="bold" fill="#000000">sand-400</text>
+<text x="60" y="1105" font-size="14" fill="#333333">#F2D5B2</text>
+<text x="370" y="1100" font-size="12" fill="#666666">secondary button bg, blockquote border</text>
+<rect x="50" y="1140" width="300" height="60" fill="#DDB88E" stroke="#000000" stroke-width="1" />
+<text x="60" y="1160" font-size="16" font-weight="bold" fill="#000000">sand-500</text>
+<text x="60" y="1175" font-size="14" fill="#333333">#DDB88E</text>
+<text x="370" y="1170" font-size="12" fill="#666666">icons on light bg</text>
+<rect x="50" y="1210" width="300" height="60" fill="#C29D77" stroke="#000000" stroke-width="1" />
+<text x="60" y="1230" font-size="16" font-weight="bold" fill="#000000">sand-600</text>
+<text x="60" y="1245" font-size="14" fill="#333333">#C29D77</text>
+<text x="370" y="1240" font-size="12" fill="#666666">hover state on sand-400</text>
+<rect x="50" y="1280" width="300" height="60" fill="#A58262" stroke="#000000" stroke-width="1" />
+<text x="60" y="1300" font-size="16" font-weight="bold" fill="#000000">sand-700</text>
+<text x="60" y="1315" font-size="14" fill="#333333">#A58262</text>
+<text x="370" y="1310" font-size="12" fill="#666666">dark-mode sand text</text>
+<rect x="50" y="1350" width="300" height="60" fill="#84674E" stroke="#000000" stroke-width="1" />
+<text x="60" y="1370" font-size="16" font-weight="bold" fill="#000000">sand-800</text>
+<text x="60" y="1385" font-size="14" fill="#333333">#84674E</text>
+<text x="370" y="1380" font-size="12" fill="#666666">dark-mode sand bg</text>
+<rect x="50" y="1420" width="300" height="60" fill="#5D4634" stroke="#000000" stroke-width="1" />
+<text x="60" y="1440" font-size="16" font-weight="bold" fill="#000000">sand-900</text>
+<text x="60" y="1455" font-size="14" fill="#333333">#5D4634</text>
+<text x="370" y="1450" font-size="12" fill="#666666">dark-mode sand border</text>
+<text x="50" y="1540" font-size="20" font-weight="bold" fill="#868E96">3. Neutral ramp (cool gray)</text>
+<rect x="50" y="1580" width="300" height="60" fill="#FCFCFD" stroke="#000000" stroke-width="1" />
+<text x="60" y="1600" font-size="16" font-weight="bold" fill="#000000">gray-50</text>
+<text x="60" y="1615" font-size="14" fill="#333333">#FCFCFD</text>
+<text x="370" y="1610" font-size="12" fill="#666666">card interiors</text>
+<rect x="50" y="1650" width="300" height="60" fill="#F8F9FA" stroke="#000000" stroke-width="1" />
+<text x="60" y="1670" font-size="16" font-weight="bold" fill="#000000">gray-100</text>
+<text x="60" y="1685" font-size="14" fill="#333333">#F8F9FA</text>
+<text x="370" y="1680" font-size="12" fill="#666666">article BG alt rows</text>
+<rect x="50" y="1720" width="300" height="60" fill="#F1F3F5" stroke="#000000" stroke-width="1" />
+<text x="60" y="1740" font-size="16" font-weight="bold" fill="#000000">gray-200</text>
+<text x="60" y="1755" font-size="14" fill="#333333">#F1F3F5</text>
+<text x="370" y="1750" font-size="12" fill="#666666">hairlines, subtle dividers</text>
+<rect x="50" y="1790" width="300" height="60" fill="#E9ECEF" stroke="#000000" stroke-width="1" />
+<text x="60" y="1810" font-size="16" font-weight="bold" fill="#000000">gray-300</text>
+<text x="60" y="1825" font-size="14" fill="#333333">#E9ECEF</text>
+<text x="370" y="1820" font-size="12" fill="#666666">code block borders</text>
+<rect x="50" y="1860" width="300" height="60" fill="#DEE2E6" stroke="#000000" stroke-width="1" />
+<text x="60" y="1880" font-size="16" font-weight="bold" fill="#000000">gray-400</text>
+<text x="60" y="1895" font-size="14" fill="#333333">#DEE2E6</text>
+<text x="370" y="1890" font-size="12" fill="#666666">caption text</text>
+<rect x="50" y="1930" width="300" height="60" fill="#CED4DA" stroke="#000000" stroke-width="1" />
+<text x="60" y="1950" font-size="16" font-weight="bold" fill="#000000">gray-500</text>
+<text x="60" y="1965" font-size="14" fill="#333333">#CED4DA</text>
+<text x="370" y="1960" font-size="12" fill="#666666">UI chrome borders</text>
+<rect x="50" y="2000" width="300" height="60" fill="#ADB5BD" stroke="#000000" stroke-width="1" />
+<text x="60" y="2020" font-size="16" font-weight="bold" fill="#000000">gray-600</text>
+<text x="60" y="2035" font-size="14" fill="#333333">#ADB5BD</text>
+<text x="370" y="2030" font-size="12" fill="#666666">secondary text</text>
+<rect x="50" y="2070" width="300" height="60" fill="#868E96" stroke="#000000" stroke-width="1" />
+<text x="60" y="2090" font-size="16" font-weight="bold" fill="#000000">gray-700</text>
+<text x="60" y="2105" font-size="14" fill="#333333">#868E96</text>
+<text x="370" y="2100" font-size="12" fill="#666666">muted headings</text>
+<rect x="50" y="2140" width="300" height="60" fill="#495057" stroke="#000000" stroke-width="1" />
+<text x="60" y="2160" font-size="16" font-weight="bold" fill="#000000">gray-800</text>
+<text x="60" y="2175" font-size="14" fill="#333333">#495057</text>
+<text x="370" y="2170" font-size="12" fill="#666666">body text on tinted BGs</text>
+<rect x="50" y="2210" width="300" height="60" fill="#343A40" stroke="#000000" stroke-width="1" />
+<text x="60" y="2230" font-size="16" font-weight="bold" fill="#000000">gray-900</text>
+<text x="60" y="2245" font-size="14" fill="#333333">#343A40</text>
+<text x="370" y="2240" font-size="12" fill="#666666">dark-mode body text</text>
+</svg>
