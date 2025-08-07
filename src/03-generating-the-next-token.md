@@ -383,19 +383,24 @@ import random
 
 def sample_top_p(probabilities, p):
     sorted_probabilities = sorted(probabilities, key=lambda item: item["prob"], reverse=True)
+
     top_p_probabilities = []
     cumulative_prob = 0
+
     for item in sorted_probabilities:
         top_p_probabilities.append(item)
         cumulative_prob += item["prob"]
         if cumulative_prob >= p:
             break
+
     return random.choices(top_p_probabilities, weights=[item["prob"] for item in top_p_probabilities], k=1)[0]
 ```
 
 Let's use this function in a simple example:
 
 ```python
+from collections import defaultdict
+
 logprobs = [
     {"token": "Apple", "prob": 0.5},
     {"token": "Banana", "prob": 0.3},
@@ -411,13 +416,34 @@ for _ in range(1000):
 print(counts)
 ```
 
-This will output something like:
+Here, we include all tokens whose cumulative probability meets or exceeds `p=0.9`.
+This means that the tokens "Apple", "Banana" and "Cherry" are included, while "Durian" and "Elderberry" are not.
+
+We can see this in the output:
 
 ```
 {'Banana': 356, 'Apple': 531, 'Cherry': 113}
 ```
 
-Note that we include only the top tokens whose cumulative probability meets or exceeds p.
+![Top-P Sampling](images/top_p.svg)
+
+Let's what happens if we set `p=0.8`:
+
+```python
+counts = defaultdict(int)
+for _ in range(1000):
+    counts[sample_top_p(logprobs, p=0.8)["token"]] += 1
+
+print(counts)
+```
+
+This will output something like:
+
+```
+{'Apple': 624, 'Banana': 376}
+```
+
+In this case, only the "Apple" and "Banana" tokens are sampled because their cumulative probability is already `p=0.8`.
 
 As with k, p is a tunable hyperparameter.
 The higher p is, the more diverse the output will be.
