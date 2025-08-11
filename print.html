@@ -1009,9 +1009,9 @@ $$</p>
 $$</p>
 <p>The cosine similarity is:</p>
 <ul>
-<li>equal to 1 if the vectors are identical,</li>
+<li>equal to 1 if the vectors have the same direction,</li>
 <li>equal to 0 if the vectors are orthogonal,</li>
-<li>equal to -1 if the vectors are diametrically opposed.</li>
+<li>equal to -1 if the vectors have opposite directions.</li>
 </ul>
 <p>Generally speaking, the closer the cosine similarity is to 1, the more similar the vectors are.
 The closer it is to -1, the more dissimilar they are.</p>
@@ -1071,6 +1071,7 @@ To address this, vector databases use specialized algorithms to accelerate the s
 <p>One of the most widely used algorithms for efficient similarity search is <strong>IVFFlat</strong> (short for InVerted File Flat).</p>
 <p>The IVFFlat algorithm works by partitioning the embedding space into cells with centroids.
 At search time, the algorithm first finds the nearest centroids and then performs a search only inside those cells.</p>
+<p><img src="images/ivfflat_cells.png" alt="IVFFlat Cells" /></p>
 <p>In other words, the algorithm performs the following steps to find the best embeddings for a query embedding \(\vec{v}\):</p>
 <ol>
 <li>Calculate the distance between \(\vec{v}\) and all centroids.</li>
@@ -1078,6 +1079,7 @@ At search time, the algorithm first finds the nearest centroids and then perform
 <li>Calculate the distance between \(\vec{v}\) and all embeddings within the cells corresponding to the \(k\) centroids from step 2.</li>
 <li>Return the embeddings with the smallest distance to \(\vec{v}\).</li>
 </ol>
+<p><img src="images/ivfflat_search.png" alt="IVFFlat Search" /></p>
 <p>The cells and their centroids must be learned from the data in advance, which is why we typically build the index only after inserting some initial data.</p>
 <p>It's important to note that, like most similarity search algorithms used in vector databases, IVFFlat performs only an <strong>approximate nearest neighbor search</strong>.
 As a result, it may not always return the exact nearest neighbors, depending on the location of the query embedding in the vector space.
@@ -1178,7 +1180,7 @@ print("Cosine distance:", 1 - get_cosine_similarity(v, w))
 </code></pre>
 <p>This will output approximately:</p>
 <ul>
-<li><code>0.1732</code> for the L2 distance</li>
+<li><code>0.1732</code> for the Euclidean distance</li>
 <li><code>-0.0800</code> for the negative inner product</li>
 <li><code>0.0438</code> for the cosine distance</li>
 </ul>
