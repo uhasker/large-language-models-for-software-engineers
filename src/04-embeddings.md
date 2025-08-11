@@ -90,9 +90,9 @@ $$
 
 The cosine similarity is:
 
-- equal to 1 if the vectors are identical,
+- equal to 1 if the vectors have the same direction,
 - equal to 0 if the vectors are orthogonal,
-- equal to -1 if the vectors are diametrically opposed.
+- equal to -1 if the vectors have opposite directions.
 
 Generally speaking, the closer the cosine similarity is to 1, the more similar the vectors are.
 The closer it is to -1, the more dissimilar they are.
@@ -175,12 +175,16 @@ One of the most widely used algorithms for efficient similarity search is **IVFF
 The IVFFlat algorithm works by partitioning the embedding space into cells with centroids.
 At search time, the algorithm first finds the nearest centroids and then performs a search only inside those cells.
 
+![IVFFlat Cells](images/ivfflat_cells.png)
+
 In other words, the algorithm performs the following steps to find the best embeddings for a query embedding \\(\vec{v}\\):
 
 1. Calculate the distance between \\(\vec{v}\\) and all centroids.
 2. Find the \\(k\\) centroids with the smallest distance to \\(\vec{v}\\).
 3. Calculate the distance between \\(\vec{v}\\) and all embeddings within the cells corresponding to the \\(k\\) centroids from step 2.
 4. Return the embeddings with the smallest distance to \\(\vec{v}\\).
+
+![IVFFlat Search](images/ivfflat_search.png)
 
 The cells and their centroids must be learned from the data in advance, which is why we typically build the index only after inserting some initial data.
 
@@ -318,7 +322,7 @@ print("Cosine distance:", 1 - get_cosine_similarity(v, w))
 
 This will output approximately:
 
-- `0.1732` for the L2 distance
+- `0.1732` for the Euclidean distance
 - `-0.0800` for the negative inner product
 - `0.0438` for the cosine distance
 
