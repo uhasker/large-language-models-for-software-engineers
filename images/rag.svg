@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+     width="1500" height="1000" viewBox="0 0 1500 1000">
+<defs>
+<marker markerWidth="6" markerHeight="6" viewBox="-2 -2 6 6" orient="auto" id="d0">
+<path d="M -2,-2 L 2,0 L -2,2 Z" fill="#3E63DD" stroke="none" />
+</marker>
+</defs>
+<rect x="0" y="0" width="1500" height="1000" fill="#FCFCFD" />
+<use xlink:href="#d0" />
+<rect x="350" y="450" width="220" height="100" rx="18" ry="18" fill="#EEF4FF" stroke="#3E63DD" stroke-width="3" />
+<rect x="820" y="450" width="240" height="100" rx="18" ry="18" fill="#FFF6EE" stroke="#DDB88E" stroke-width="3" />
+<rect x="330" y="650" width="260" height="100" rx="18" ry="18" fill="#F8F9FA" stroke="#868E96" stroke-width="3" />
+<text x="460.0" y="510.0" font-size="32" fill="#3E63DD" font-weight="600" text-anchor="middle" dominant-baseline="central">Retriever</text>
+<text x="940.0" y="510.0" font-size="32" fill="#DDB88E" font-weight="600" text-anchor="middle" dominant-baseline="central">Generator</text>
+<text x="460.0" y="690" font-size="28" fill="#495057" font-weight="500" text-anchor="middle" dominant-baseline="central">Document</text>
+<text x="460.0" y="728" font-size="28" fill="#495057" font-weight="500" text-anchor="middle" dominant-baseline="central">Store</text>
+<text x="60" y="510" font-size="36" fill="#343A40" font-weight="600">Prompt</text>
+<text x="1310" y="510" font-size="36" fill="#343A40" font-weight="600">Response</text>
+<path d="M190,500.0 L350,500.0" stroke="#3E63DD" stroke-width="4" marker-end="url(#d0)" stroke-linecap="round" />
+<path d="M570,500.0 L820,500.0" stroke="#3E63DD" stroke-width="4" marker-end="url(#d0)" stroke-linecap="round" />
+<path d="M1060,500.0 L1300,500.0" stroke="#3E63DD" stroke-width="4" marker-end="url(#d0)" stroke-linecap="round" />
+<path d="M435.0,550 L435.0,650" stroke="#868E96" stroke-width="3" marker-end="url(#d0)" stroke-linecap="round" />
+<path d="M485.0,650 L485.0,550" stroke="#868E96" stroke-width="3" marker-end="url(#d0)" stroke-linecap="round" />
+<path d="M190,500.0 Q505.0,140,820,500.0" stroke="#2C4DBA" fill="none" stroke-width="4" marker-end="url(#d0)" stroke-linecap="round" />
+</svg>
