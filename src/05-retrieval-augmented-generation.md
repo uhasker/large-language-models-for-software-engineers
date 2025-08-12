@@ -150,6 +150,8 @@ To recap, RAG consists of two steps:
 1. **Retrieval**—Find the most relevant documents in a knowledge base.
 2. **Generation**—Use the retrieved documents to generate a response.
 
+![RAG Architecture](./images/rag.svg)
+
 While the core concept behind RAG is relatively simple, applying it in real-world scenarios introduces additional complexity.
 In particular, we often work with large documents that must be broken into smaller segments, or **chunks**, to make them suitable for retrieval.
 
