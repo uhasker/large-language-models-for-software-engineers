@@ -39,7 +39,10 @@ N_POINTS = X.shape[0]
 
 query = rng.normal(size=(1, 2)) * 0.7 + np.array([[0.0, 0.5]])
 
-def kmeans_lloyd(data: np.ndarray, k: int, iters: int, rng: np.random.Generator) -> Tuple[np.ndarray, np.ndarray]:
+
+def kmeans_lloyd(
+    data: np.ndarray, k: int, iters: int, rng: np.random.Generator
+) -> Tuple[np.ndarray, np.ndarray]:
     init_idx = rng.choice(data.shape[0], size=k, replace=False)
     centroids = data[init_idx].copy()
     for _ in range(iters):
@@ -55,7 +58,9 @@ def kmeans_lloyd(data: np.ndarray, k: int, iters: int, rng: np.random.Generator)
     labels = d2.argmin(axis=1)
     return centroids, labels
 
+
 centroids, labels = kmeans_lloyd(X, N_CENTROIDS, N_KMEANS_ITERS, rng)
+
 
 def ivfflat_search(data, centroids, labels, query, k_probes, n_neighbors):
     d2_cent = ((centroids[None, :, :] - query[:, None, :]) ** 2).sum(axis=2)[0]
@@ -71,6 +76,7 @@ def ivfflat_search(data, centroids, labels, query, k_probes, n_neighbors):
     bf_order = np.argsort(d2_all)[:n_neighbors]
     bf_dists = np.sqrt(d2_all[bf_order])
     return nn_global_idx, nn_dists, bf_order, bf_dists, probe_ids
+
 
 # background grid (nearest-centroid cells)
 xmin, ymin = X.min(axis=0) - PAD
@@ -88,26 +94,40 @@ plt.pcolormesh(xx, yy, grid_labels, shading="auto", cmap="Blues", alpha=0.7)
 plt.scatter(X[:, 0], X[:, 1], s=6, c="darkgreen", alpha=0.8)
 plt.scatter(centroids[:, 0], centroids[:, 1], s=120, marker="x", linewidths=2, c="red")
 plt.scatter(query[:, 0], query[:, 1], s=200, marker="*", c="orange")
-plt.title("IVFFlat: space partitioned into centroid cells\n(centroids - red ×, query - orange *)")
-plt.xlabel("x"); plt.ylabel("y")
+plt.title(
+    "IVFFlat: space partitioned into centroid cells\n(centroids - red ×, query - orange *)"
+)
+plt.xlabel("x")
+plt.ylabel("y")
 fig1.tight_layout()
 fig1.savefig("ivfflat_cells.png", dpi=150)
 
 # Search + Plot 2
-ivf_idx, ivf_dists, bf_idx, bf_dists, probe_ids = ivfflat_search(X, centroids, labels, query, K_PROBES, N_NEIGHBORS)
+ivf_idx, ivf_dists, bf_idx, bf_dists, probe_ids = ivfflat_search(
+    X, centroids, labels, query, K_PROBES, N_NEIGHBORS
+)
 selected = np.isin(grid_labels, probe_ids)
 grid_selected = np.where(selected, grid_labels, -1)
 
 fig2 = plt.figure(figsize=(12, 8))
 plt.pcolormesh(xx, yy, grid_selected, shading="auto", cmap="Blues", alpha=0.7)
 plt.scatter(X[:, 0], X[:, 1], s=6, c="darkgreen", alpha=0.8)
-plt.scatter(X[np.isin(labels, probe_ids), 0], X[np.isin(labels, probe_ids), 1], s=6, c="purple", alpha=0.8)
+plt.scatter(
+    X[np.isin(labels, probe_ids), 0],
+    X[np.isin(labels, probe_ids), 1],
+    s=6,
+    c="purple",
+    alpha=0.8,
+)
 plt.scatter(centroids[:, 0], centroids[:, 1], s=120, marker="x", linewidths=2, c="red")
 plt.scatter(X[ivf_idx, 0], X[ivf_idx, 1], s=80, marker="^", c="magenta")
 plt.scatter(query[:, 0], query[:, 1], s=220, marker="*", c="orange")
-plt.title(f"IVFFlat search: probing {K_PROBES} nearest cells, returning {N_NEIGHBORS} neighbors\n"
-          "candidates (purple •), results (magenta ▲), centroids (red ×), query (orange *)")
-plt.xlabel("x"); plt.ylabel("y")
+plt.title(
+    f"IVFFlat search: probing {K_PROBES} nearest cells, returning {N_NEIGHBORS} neighbors\n"
+    "candidates (purple •), results (magenta ▲), centroids (red ×), query (orange *)"
+)
+plt.xlabel("x")
+plt.ylabel("y")
 fig2.tight_layout()
 fig2.savefig("ivfflat_search.png", dpi=150)
 
