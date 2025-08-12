@@ -155,7 +155,7 @@ To recap, RAG consists of two steps:
 While the core concept behind RAG is relatively simple, applying it in real-world scenarios introduces additional complexity.
 In particular, we often work with large documents that must be broken into smaller segments, or **chunks**, to make them suitable for retrieval.
 
-## Chunking Strategies
+## Simple Chunking Strategies
 
 Consider the following document:
 
@@ -326,8 +326,47 @@ This outputs the following:
 
 Much better.
 
-However, while this is aware of the syntax of the document, it will still fail to capture the semantics.
+Generally speaking, it is often useful to take document structure into account when performing chunking, especially when working with structured document formats such as Markdown or HTML.
+For example, if we have a Markdown document, we can use the headers to split it into sections.
+
+Consider the following Markdown document:
+
+```
+# A Markdown Document
+
+## Introduction
+
+This is the introduction of the document.
+
+## Background
+
+This is the background section of the document.
+
+## Conclusion
+
+This is the conclusion of the document.
+```
+
+We can use the headers to split the document into sections:
+
+```python
+def markdown_chunking(document):
+    return document.split("\n\n##")
+
+chunks = markdown_chunking(document)
+for chunk in chunks:
+    print(repr(chunk))
+```
+
+A real implementation would be more complex and might account for headings of different levels, code blocks, and other constructs.
+Additionally, combining Markdown chunking with recursive chunking can produce more granular chunks.
+
+When documents are cleanly structured, simple chunking strategies can be highly effective.
+However, structure alone is not enough.
+While these methods recognize the document’s syntax, they cannot capture its meaning.
 Luckily, we just learned an excellent tool for that—embeddings.
+
+## Semantic Chunking
 
 Instead of splitting the document based on specific characters, we should aim to segment it at points where the semantic meaning changes.
 
@@ -416,7 +455,7 @@ Usually, the threshold will be dynamic—for example, we might split at distance
 Additionally, most semantic chunking algorithms will enforce a minimum and a maximum chunk size to avoid generating too short or too long chunks.
 We can also use context windows containing multiple sentences instead of single sentences.
 
-## Chunk Contextualization
+## Contextualized Chunking
 
 Apart from changing the chunking strategy, we can also improve performance by contextualizing the chunks.
 
