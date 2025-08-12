@@ -291,9 +291,10 @@ print(response)
 <li><strong>Retrieval</strong>—Find the most relevant documents in a knowledge base.</li>
 <li><strong>Generation</strong>—Use the retrieved documents to generate a response.</li>
 </ol>
+<p><img src="./images/rag.svg" alt="RAG Architecture" /></p>
 <p>While the core concept behind RAG is relatively simple, applying it in real-world scenarios introduces additional complexity.
 In particular, we often work with large documents that must be broken into smaller segments, or <strong>chunks</strong>, to make them suitable for retrieval.</p>
-<h2 id="chunking-strategies"><a class="header" href="#chunking-strategies">Chunking Strategies</a></h2>
+<h2 id="simple-chunking-strategies"><a class="header" href="#simple-chunking-strategies">Simple Chunking Strategies</a></h2>
 <p>Consider the following document:</p>
 <pre><code class="language-python">document = """
 John Doe is the CEO of ExampleCorp.
@@ -421,8 +422,38 @@ for chunk in chunks[:3]:
 '\nIn his spare time, he plays guitar and reads science fiction'
 </code></pre>
 <p>Much better.</p>
-<p>However, while this is aware of the syntax of the document, it will still fail to capture the semantics.
+<p>Generally speaking, it is often useful to take document structure into account when performing chunking, especially when working with structured document formats such as Markdown or HTML.
+For example, if we have a Markdown document, we can use the headers to split it into sections.</p>
+<p>Consider the following Markdown document:</p>
+<pre><code># A Markdown Document
+
+## Introduction
+
+This is the introduction of the document.
+
+## Background
+
+This is the background section of the document.
+
+## Conclusion
+
+This is the conclusion of the document.
+</code></pre>
+<p>We can use the headers to split the document into sections:</p>
+<pre><code class="language-python">def markdown_chunking(document):
+    return document.split("\n\n##")
+
+chunks = markdown_chunking(document)
+for chunk in chunks:
+    print(repr(chunk))
+</code></pre>
+<p>A real implementation would be more complex and might account for headings of different levels, code blocks, and other constructs.
+Additionally, combining Markdown chunking with recursive chunking can produce more granular chunks.</p>
+<p>When documents are cleanly structured, simple chunking strategies can be highly effective.
+However, structure alone is not enough.
+While these methods recognize the document’s syntax, they cannot capture its meaning.
 Luckily, we just learned an excellent tool for that—embeddings.</p>
+<h2 id="semantic-chunking"><a class="header" href="#semantic-chunking">Semantic Chunking</a></h2>
 <p>Instead of splitting the document based on specific characters, we should aim to segment it at points where the semantic meaning changes.</p>
 <p>The simplest way to perform <strong>semantic chunking</strong> is to compute embeddings for all sentences in the document and then split the document at places where the embedding similarity between a previous sentence and the next one is below a certain threshold.</p>
 <p>To implement semantic chunking, we first need a function that computes the embedding similarity between two sentences.
@@ -492,7 +523,7 @@ for chunk in chunks:
 Usually, the threshold will be dynamic—for example, we might split at distances that are in the 95th percentile of all distances.
 Additionally, most semantic chunking algorithms will enforce a minimum and a maximum chunk size to avoid generating too short or too long chunks.
 We can also use context windows containing multiple sentences instead of single sentences.</p>
-<h2 id="chunk-contextualization"><a class="header" href="#chunk-contextualization">Chunk Contextualization</a></h2>
+<h2 id="contextualized-chunking"><a class="header" href="#contextualized-chunking">Contextualized Chunking</a></h2>
 <p>Apart from changing the chunking strategy, we can also improve performance by contextualizing the chunks.</p>
 <p>One possible approach is outlined in the Anthropic paper <a href="https://www.anthropic.com/news/contextual-retrieval">Contextual Retrieval</a> where the authors propose to postprocess every chunk by adding the document or a document summary and asking an LLM to generate a contextualized chunk.</p>
 <p>Here is how their prompt looks like:</p>
