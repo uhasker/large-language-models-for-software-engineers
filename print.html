@@ -1533,13 +1533,13 @@ for chunk in chunks:
 Additionally, combining Markdown chunking with recursive chunking can produce more granular chunks.</p>
 <p>When documents are cleanly structured, simple chunking strategies can be highly effective.
 However, structure alone is not enough.
-While these methods recognize the document’s syntax, they cannot capture its meaning.
+While these methods recognize the document's syntax, they cannot capture its meaning.
 Luckily, we just learned an excellent tool for that—embeddings.</p>
 <h2 id="semantic-chunking"><a class="header" href="#semantic-chunking">Semantic Chunking</a></h2>
-<p>Instead of splitting the document based on specific characters, we should aim to segment it at points where the semantic meaning changes.</p>
-<p>The simplest way to perform <strong>semantic chunking</strong> is to compute embeddings for all sentences in the document and then split the document at places where the embedding similarity between a previous sentence and the next one is below a certain threshold.</p>
+<p>Instead of splitting the document by specific characters, we can segment it at points where the semantic meaning changes.</p>
+<p>The simplest way to perform <strong>semantic chunking</strong> is to compute embeddings for all sentences in the document, and then split the document at points where the embedding similarity between one sentence and the next falls below a certain threshold.</p>
 <p>To implement semantic chunking, we first need a function that computes the embedding similarity between two sentences.
-We will use the dot product for this purpose:</p>
+We will use the dot product for this purpose because the OpenAI embeddings are expected to be normalized:</p>
 <pre><code class="language-python">def dot_product(embedding1, embedding2):
     return sum(x * y for x, y in zip(embedding1, embedding2))
 
@@ -1551,40 +1551,50 @@ def get_embedding_similarity(text1, text2):
 </code></pre>
 <p>Now, we can implement the semantic chunking function.</p>
 <p>First, we split the document into sentences:</p>
-<pre><code class="language-python">sentences = document.split(".")
+<pre><code class="language-python">def get_sentences(document):
+    return [s.strip() for s in document.split(".") if s.strip()]
+
+sentences = get_sentences(document)
 </code></pre>
 <blockquote>
 <p>This implementation is rather naive and does not take constructs like abbreviations into account.
 We will ignore this for now for the sake of simplicity.</p>
 </blockquote>
-<p>Now, we can iterate over the sentences and compute the embedding distance between the current and previous sentence.
-If the distance is below a certain threshold, we add the sentence to the current chunk.
-Otherwise, we start a new chunk:</p>
+<p>Next, we precompute the embeddings for all sentences:</p>
+<pre><code class="language-python">embeddings = [generate_embedding(sentence) for sentence in sentences]
+</code></pre>
+<p>This is needed to avoid recomputing the embeddings for the same sentence multiple times when we iterate over the sentences.</p>
+<p>Now, we can iterate over the sentences:</p>
 <pre><code class="language-python">chunks = []
 for i in range(len(sentences)):
     # Always add the first sentence as a chunk
     if i == 0:
         chunks.append(sentences[i])
     else:
-        # Compute the embedding distance between the current and previous sentence
-        embedding_similarity = get_embedding_similarity(sentences[i - 1], sentences[i])
-        if embedding_similarity &lt; threshold:
-            # If the distance is below the threshold, add the sentence to the current chunk
-            chunks[-1] += ". " + sentences[i]
-        else:
-            # Otherwise, start a new chunk
-            chunks.append(sentences[i])
+        ...
+</code></pre>
+<p>In every iteration except the first, we compute the embedding similarity between the current and previous sentence.
+If the distance is below a certain threshold, we add the sentence to the current chunk.
+Otherwise, we start a new chunk:</p>
+<pre><code class="language-python">embedding_similarity = dot_product(embeddings[i - 1], embeddings[i])
+if embedding_similarity &lt; threshold:
+    chunks.append(sentences[i])
+else:
+    chunks[-1] += ". " + sentences[i]
 </code></pre>
 <p>Here is how the full implementation looks like:</p>
 <pre><code class="language-python">def semantic_chunking(document, threshold):
-    sentences = document.split(".")
+    sentences = get_sentences(document)
+
+    embeddings = [generate_embedding(sentence) for sentence in sentences]
+
     chunks = []
     for i in range(len(sentences)):
         if i == 0:
             chunks.append(sentences[i])
         else:
-            embedding_similarity = get_embedding_similarity(
-                sentences[i - 1], sentences[i]
+            embedding_similarity = dot_product(
+                embeddings[i - 1], embeddings[i]
             )
             if embedding_similarity &lt; threshold:
                 chunks.append(sentences[i])
@@ -1597,19 +1607,151 @@ for chunk in chunks:
     print(repr(chunk))
 </code></pre>
 <p>This outputs the following:</p>
-<pre><code>'\nJohn Doe is the CEO of ExampleCorp'
-"\nHe's a skilled software engineer with a focus on scalable systems. \nIn his spare time, he plays guitar and reads science fiction"
-'\n\nExampleCorp was founded in 2020 and is based in San Francisco'
+<pre><code>'John Doe is the CEO of ExampleCorp'
+"He's a skilled software engineer with a focus on scalable systems. In his spare time, he plays guitar and reads science fiction"
+'ExampleCorp was founded in 2020 and is based in San Francisco'
+'It builds AI solutions for various industries'
+'John still finds time for music and books, even with a busy schedule'
+'The company is a subsidiary of Example Inc, a tech conglomerate. Example Inc started in 2015 and is headquartered in New York. ExampleCorp keeps its startup energy despite the parent company'
+...
 </code></pre>
 <p>This implementation is an oversimplification of semantic chunking.
 Usually, the threshold will be dynamic—for example, we might split at distances that are in the 95th percentile of all distances.
-Additionally, most semantic chunking algorithms will enforce a minimum and a maximum chunk size to avoid generating too short or too long chunks.
+Most semantic chunking algorithms will also enforce a minimum and a maximum chunk size to avoid generating too short or too long chunks.
 We can also use context windows containing multiple sentences instead of single sentences.</p>
+<p>Additionally, the rule of when to add a chunk boundary is often more complex than the one we used in the example above.
+For example, the <a href="https://link.springer.com/article/10.1007/s10791-025-09638-7">max-min semantic chunking algorithm</a> tries to approach chunking as a temporal clustering problem, i.e. a clustering problem where we want to keep the ordering intact.</p>
+<p>The core idea is similar to our naive algorithm:
+We process the document sentence by sentence and for each sentence we decide whether to add it to the current chunk or to start a new one.</p>
+<p>To make this decision, we look at two things.</p>
+<p>First, the "internal cohesion" of the chunk is computed as the minimum pairwise embedding similarity between all sentences in the current chunk:</p>
+<p>$$
+\text{min_sim}(C) = \min_{s_i, s_j \in C} \text{sim}(s_i, s_j)
+$$</p>
+<p>Next, the "closeness" of the new sentence to the chunk is computed as the maximum similarity between any sentence in the current chunk and the sentence we are currently processing:</p>
+<p>$$
+\text{max_sim}(C, s) = \max_{s_i \in C} \text{sim}(s_i, s)
+$$</p>
+<p>We then add the sentence if the closeness is greater than the internal cohesion—that is, if the sentence is more similar to the chunk than the sentences in the chunk are to one another:</p>
+<p>$$
+\text{max_sim}(C, s) &gt; \text{min_sim}(C)
+$$</p>
+<p>Otherwise, we start a new chunk.</p>
+<p>Let's implement this in code.</p>
+<p>First, we need to implement the function that computes the internal cohesion of a chunk.
+We must handle cases where the chunk contains only one sentence separately, for example by returning a predefined default value.</p>
+<pre><code class="language-python">def get_min_sim(chunk_embeddings):
+    if len(chunk_embeddings) == 1:
+        return 0.3
+
+    min_sim = float("inf")
+    for i in range(len(chunk_embeddings)):
+        for j in range(i + 1, len(chunk_embeddings)):
+            sim = dot_product(chunk_embeddings[i], chunk_embeddings[j])
+            min_sim = min(min_sim, sim)
+    return min_sim
+</code></pre>
+<p>Next, we need to implement the function that computes the closeness of a sentence to a chunk:</p>
+<pre><code class="language-python">def get_max_sim(chunk_embeddings, sentence_embedding):
+    max_sim = 0
+    for chunk_embedding in chunk_embeddings:
+        sim = dot_product(sentence_embedding, chunk_embedding)
+        max_sim = max(max_sim, sim)
+    return max_sim
+</code></pre>
+<p>Now, we can implement the semantic chunking function.
+First, we need to get the sentences and their embeddings.
+Additionally, we need to initialize the first chunk and the current chunk embeddings:</p>
+<pre><code class="language-python">sentences = get_sentences(document)
+embeddings = [generate_embedding(sentence) for sentence in sentences]
+
+chunks = []
+current_chunk = sentences[:1]
+current_chunk_embeddings = embeddings[:1]
+</code></pre>
+<p>Now we iterate over the sentences:</p>
+<pre><code class="language-python">for i in range(1, len(sentences)):
+    ...
+</code></pre>
+<p>In every iteration we compute the internal cohesion and the closeness of the current sentence to the current chunk:</p>
+<pre><code class="language-python">sentence = sentences[i]
+sentence_embedding = embeddings[i]
+min_sim = get_min_sim(current_chunk_embeddings)
+max_sim = get_max_sim(current_chunk_embeddings, sentence_embedding)
+</code></pre>
+<p>Then we make the decision whether to add the sentence to the current chunk or to start a new one:</p>
+<pre><code class="language-python">if max_sim &gt; min_sim:
+    current_chunk.append(sentence)
+    current_chunk_embeddings.append(sentence_embedding)
+else:
+    # Start new chunk
+    chunks.append(". ".join(current_chunk))
+    current_chunk = [sentence]
+    current_chunk_embeddings = [sentence_embedding]
+</code></pre>
+<p>Finally, we need to add the last chunk outside of the loop:</p>
+<pre><code class="language-python">if current_chunk:
+    chunks.append(". ".join(current_chunk))
+</code></pre>
+<p>This is the complete implementation:</p>
+<pre><code class="language-python">def max_min_semantic_chunking(document):
+    sentences = get_sentences(document)
+    embeddings = [generate_embedding(sentence) for sentence in sentences]
+
+    chunks = []
+    current_chunk = sentences[:1]
+    current_chunk_embeddings = embeddings[:1]
+
+    for i in range(1, len(sentences)):
+        sentence = sentences[i]
+        sentence_embedding = embeddings[i]
+        min_sim = get_min_sim(current_chunk_embeddings)
+        max_sim = get_max_sim(current_chunk_embeddings, sentence_embedding)
+
+        if max_sim &gt; min_sim:
+            current_chunk.append(sentence)
+            current_chunk_embeddings.append(sentence_embedding)
+        else:
+            chunks.append(". ".join(current_chunk))
+            current_chunk = [sentence]
+            current_chunk_embeddings = [sentence_embedding]
+
+    if current_chunk:
+        chunks.append(". ".join(current_chunk))
+
+    return chunks
+
+
+print("\nMax-min semantic chunking:")
+chunks = max_min_semantic_chunking(document)
+for chunk in chunks:
+    print(repr(chunk))
+</code></pre>
+<p>This will output the following:</p>
+<pre><code>'John Doe is the CEO of ExampleCorp'
+"He's a skilled software engineer with a focus on scalable systems. In his spare time, he plays guitar and reads science fiction"
+'ExampleCorp was founded in 2020 and is based in San Francisco'
+'It builds AI solutions for various industries'
+'John still finds time for music and books, even with a busy schedule'
+'The company is a subsidiary of Example Inc, a tech conglomerate. Example Inc started in 2015 and is headquartered in New York'
+...
+</code></pre>
+<p>Again, when implementing this for real documents, the technical details are slightly more complex.
+Most importantly, when the size of the current chunk is small, the closeness should be allowed to be lower than the internal cohesion.
+To account for this, we can use a multiplier on the closeness value which scales with the size of the chunk resulting in a dynamic threshold.
+Additionally, you need to be careful with the internal cohesion of a chunk of size 1.
+Instead of setting it to a fixed value, it is a good idea to consider the chunk and the next sentence together.</p>
+<p>Semantic methods can perform better than simple chunking methods especially for poorly structured documents.
+However, they are not a silver bullet.
+If we are dealing with a well-structured document, simple chunking methods can often be more effective.
+We must also keep in mind that semantic chunking requires computing embeddings for each sentence or sentence window in every document, which can make it unsuitable for certain applications.</p>
+<p>Therefore, in real applications, you need to weigh the benefits of semantic chunking against the cost instead of just implementing the fanciest method you know.</p>
 <h2 id="contextualized-chunking"><a class="header" href="#contextualized-chunking">Contextualized Chunking</a></h2>
 <p>Apart from changing the chunking strategy, we can also improve performance by contextualizing the chunks.</p>
 <p>One possible approach is outlined in the Anthropic paper <a href="https://www.anthropic.com/news/contextual-retrieval">Contextual Retrieval</a> where the authors propose to postprocess every chunk by adding the document or a document summary and asking an LLM to generate a contextualized chunk.</p>
 <p>Here is how their prompt looks like:</p>
-<pre><code>&lt;document&gt;
+<pre><code>
+&lt;document&gt;
 {{WHOLE_DOCUMENT}}
 &lt;/document&gt;
 Here is the chunk we want to situate within the whole document
@@ -1617,19 +1759,28 @@ Here is the chunk we want to situate within the whole document
 {{CHUNK_CONTENT}}
 &lt;/chunk&gt;
 Please give a short succinct context to situate this chunk within the overall document for the purposes of improving search retrieval of the chunk. Answer only with the succinct context and nothing else.
-</code></pre>
-<p>By adding context to chunks, we can improve the retrieval process as the LLM now has more information to generate a response.
-For example, take the following chunk:</p>
-<pre><code>The company's revenue grew by 3% over the previous quarter.
-</code></pre>
-<p>This chunk does not provide much context and it would be hard to retrieve it from a knowledge base.
-However, if we contextualize it, it becomes much easier to retrieve:</p>
-<pre><code>This chunk is from an SEC filing on ACME corp's performance in Q2 2023; the previous quarter's revenue was $314 million. The company's revenue grew by 3% over the previous quarter.
-</code></pre>
-<p>A similarity search for a query asking about the revenue growth of ACME corp would most likely miss the first chunk, but probably retrieve the second one.</p>
-<p>There are many ways to approach contextualization and the correct approach depends on the use case.
+```
+
+By adding context to chunks, we can improve the retrieval process as the LLM now has more information to generate a response.
+For example, take the following chunk:
+
+```
+The company's revenue grew by 3% over the previous quarter.
+```
+
+This chunk does not provide much context and it would be hard to retrieve it from a knowledge base.
+However, if we contextualize it, it becomes much easier to retrieve:
+
+```
+This chunk is from an SEC filing on ACME corp's performance in Q2 2023; the previous quarter's revenue was $314 million. The company's revenue grew by 3% over the previous quarter.
+```
+
+A similarity search for a query asking about the revenue growth of ACME corp would most likely miss the first chunk, but probably retrieve the second one.
+
+There are many ways to approach contextualization and the correct approach depends on the use case.
 Additionally, contextualization of chunks adds a lot of overhead during the chunking process.
-It is therefore important to weigh the benefits of contextualization against the cost.</p>
+It is therefore important to weigh the benefits of contextualization against the cost.
+</code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="structured-output-tools-and-agents"><a class="header" href="#structured-output-tools-and-agents">Structured Output, Tools and Agents</a></h1>
 <h2 id="structured-output"><a class="header" href="#structured-output">Structured Output</a></h2>
 <p>We have already discussed how to use LLMs to generate text output.
