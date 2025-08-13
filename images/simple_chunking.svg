@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+     width="1500" height="1000" viewBox="0 0 1500 1000" displayInline="False">
+<defs>
+</defs>
+<rect x="0" y="0" width="1500" height="1000" fill="#f8fafc" />
+<text x="750.0" y="70" font-size="34" font-family="Inter, Arial, sans-serif" font-weight="700" text-anchor="middle" dominant-baseline="central">Sliding-Window Chunking for Text: How to Keep Context Between Chunks</text>
+<rect x="100" y="180" width="1300" height="60" rx="12" ry="12" fill="#f3f4f6" stroke="#111827" stroke-width="2" />
+<text x="112" y="218.0" font-size="22" right="False" font-family="Inter, Arial, sans-serif" font-weight="600">Document</text>
+<rect x="460" y="180" width="160" height="60" fill="#a7f3d0" fill-opacity="0.8" stroke="#10b981" stroke-width="2" />
+<rect x="820" y="180" width="160" height="60" fill="#a7f3d0" fill-opacity="0.8" stroke="#10b981" stroke-width="2" />
+<path d="M100,420 L100,240" stroke="#6b7280" stroke-width="2" stroke-dasharray="6,6" stroke-opacity="0.7" />
+<path d="M620,420 L620,240" stroke="#6b7280" stroke-width="2" stroke-dasharray="6,6" stroke-opacity="0.7" />
+<path d="M460,560 L460,240" stroke="#6b7280" stroke-width="2" stroke-dasharray="6,6" stroke-opacity="0.7" />
+<path d="M980,560 L980,240" stroke="#6b7280" stroke-width="2" stroke-dasharray="6,6" stroke-opacity="0.7" />
+<path d="M820,700 L820,240" stroke="#6b7280" stroke-width="2" stroke-dasharray="6,6" stroke-opacity="0.7" />
+<path d="M1340,700 L1340,240" stroke="#6b7280" stroke-width="2" stroke-dasharray="6,6" stroke-opacity="0.7" />
+<rect x="100" y="420" width="520" height="80" rx="10" ry="10" fill="#e0f2fe" stroke="#1d4ed8" stroke-width="2" />
+<rect x="460" y="420" width="160" height="80" rx="10" ry="10" fill="#fde68a" fill-opacity="0.9" stroke="none" />
+<text x="360.0" y="466.0" font-size="20" font-family="Inter, Arial, sans-serif" font-weight="600" fill="#111827" text-anchor="middle" dominant-baseline="central">Chunk 1</text>
+<rect x="460" y="560" width="520" height="80" rx="10" ry="10" fill="#e0f2fe" stroke="#1d4ed8" stroke-width="2" />
+<rect x="460" y="560" width="160" height="80" rx="10" ry="10" fill="#fde68a" fill-opacity="0.9" stroke="none" />
+<rect x="820" y="560" width="160" height="80" rx="10" ry="10" fill="#fde68a" fill-opacity="0.9" stroke="none" />
+<text x="720.0" y="606.0" font-size="20" font-family="Inter, Arial, sans-serif" font-weight="600" fill="#111827" text-anchor="middle" dominant-baseline="central">Chunk 2</text>
+<rect x="820" y="700" width="520" height="80" rx="10" ry="10" fill="#e0f2fe" stroke="#1d4ed8" stroke-width="2" />
+<rect x="820" y="700" width="160" height="80" rx="10" ry="10" fill="#fde68a" fill-opacity="0.9" stroke="none" />
+<text x="1080.0" y="746.0" font-size="20" font-family="Inter, Arial, sans-serif" font-weight="600" fill="#111827" text-anchor="middle" dominant-baseline="central">Chunk 3</text>
+<text x="100" y="360" font-size="22" right="False" font-family="Inter, Arial, sans-serif" font-weight="600">Each chunk slides forward by the stride while overlapping with the previous chunk to keep context.</text>
+<text x="100" y="390" font-size="22" right="False" font-family="Inter, Arial, sans-serif" font-weight="normal">Shaded yellow areas show reused text on chunk edges; green bands highlight the same overlaps on the document.</text>
+</svg>

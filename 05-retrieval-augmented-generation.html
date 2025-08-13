@@ -322,8 +322,6 @@ This method is relatively simple: we split the document into chunks of a fixed s
     return [document[i:i+chunk_size] for i in range(0, len(document), chunk_size)]
 
 chunks = fixed_size_chunking(document, 100)
-for chunk in chunks[:3]:
-    print(repr(chunk))
 </code></pre>
 <p>The issue with this approach is that it will split the document at arbitrary points.
 For example, here are the first three chunks of our example document:</p>
@@ -335,6 +333,8 @@ For example, here are the first three chunks of our example document:</p>
 With longer documents, this will become a big problem as we will split context between chunks and lose important information.</p>
 <p>A straightforward improvement to fixed-size chunking is <strong>sliding window chunking</strong> where each new chunk slides forward while retaining some overlap with the previous chunk.
 This allows us to retain some context between the chunks.</p>
+<p><img src="./images/simple_chunking.svg" alt="Sliding Window Chunking" /></p>
+<p>Here is how the implementation looks like:</p>
 <pre><code class="language-python">def sliding_window_chunking(document, chunk_size, overlap):
     chunks = []
     for i in range(0, len(document), chunk_size - overlap):
@@ -342,8 +342,6 @@ This allows us to retain some context between the chunks.</p>
     return chunks
 
 chunks = sliding_window_chunking(document, 100, 20)
-for chunk in chunks[:3]:
-    print(repr(chunk))
 </code></pre>
 <p>Here are the first three chunks:</p>
 <pre><code>"\nJohn Doe is the CEO of ExampleCorp.\nHe's a skilled software engineer with a focus on scalable syste"
@@ -353,7 +351,7 @@ for chunk in chunks[:3]:
 <p>This is slightly better, but still not great.</p>
 <p>The problem with both of these approaches is that they are not aware of the content of the document.
 They will always split the document at the same place regardless of the actual document structure.</p>
-<p>A more sophisticated approach is to use<strong>recursive chunking</strong> where we define a hierarchy of separators and use them to recursively split the document into smaller chunks.
+<p>A more sophisticated approach is to use <strong>recursive chunking</strong> where we define a hierarchy of separators and use them to recursively split the document into smaller chunks.
 For instance, we might prioritize separators in the following order:</p>
 <ul>
 <li>Paragraphs (split by <code>\n\n</code>)</li>
@@ -413,10 +411,8 @@ We also need to make sure that we skip empty parts.</p>
     return chunks
 
 chunks = recursive_chunking(document, ['\n\n', '.', ','], 100)
-for chunk in chunks[:3]:
-    print(repr(chunk))
 </code></pre>
-<p>This outputs the following:</p>
+<p>Here are the first three chunks:</p>
 <pre><code>'\nJohn Doe is the CEO of ExampleCorp'
 "\nHe's a skilled software engineer with a focus on scalable systems"
 '\nIn his spare time, he plays guitar and reads science fiction'
@@ -444,8 +440,6 @@ This is the conclusion of the document.
     return document.split("\n\n##")
 
 chunks = markdown_chunking(document)
-for chunk in chunks:
-    print(repr(chunk))
 </code></pre>
 <p>A real implementation would be more complex and might account for headings of different levels, code blocks, and other constructs.
 Additionally, combining Markdown chunking with recursive chunking can produce more granular chunks.</p>
@@ -668,8 +662,7 @@ We must also keep in mind that semantic chunking requires computing embeddings f
 <p>Apart from changing the chunking strategy, we can also improve performance by contextualizing the chunks.</p>
 <p>One possible approach is outlined in the Anthropic paper <a href="https://www.anthropic.com/news/contextual-retrieval">Contextual Retrieval</a> where the authors propose to postprocess every chunk by adding the document or a document summary and asking an LLM to generate a contextualized chunk.</p>
 <p>Here is how their prompt looks like:</p>
-<pre><code>
-&lt;document&gt;
+<pre><code>&lt;document&gt;
 {{WHOLE_DOCUMENT}}
 &lt;/document&gt;
 Here is the chunk we want to situate within the whole document
@@ -677,28 +670,19 @@ Here is the chunk we want to situate within the whole document
 {{CHUNK_CONTENT}}
 &lt;/chunk&gt;
 Please give a short succinct context to situate this chunk within the overall document for the purposes of improving search retrieval of the chunk. Answer only with the succinct context and nothing else.
-```
-
-By adding context to chunks, we can improve the retrieval process as the LLM now has more information to generate a response.
-For example, take the following chunk:
-
-```
-The company's revenue grew by 3% over the previous quarter.
-```
-
-This chunk does not provide much context and it would be hard to retrieve it from a knowledge base.
-However, if we contextualize it, it becomes much easier to retrieve:
-
-```
-This chunk is from an SEC filing on ACME corp's performance in Q2 2023; the previous quarter's revenue was $314 million. The company's revenue grew by 3% over the previous quarter.
-```
-
-A similarity search for a query asking about the revenue growth of ACME corp would most likely miss the first chunk, but probably retrieve the second one.
-
-There are many ways to approach contextualization and the correct approach depends on the use case.
-Additionally, contextualization of chunks adds a lot of overhead during the chunking process.
-It is therefore important to weigh the benefits of contextualization against the cost.
 </code></pre>
+<p>By adding context to chunks, we can improve the retrieval process as the LLM now has more information to generate a response.
+For example, take the following chunk:</p>
+<pre><code>The company's revenue grew by 3% over the previous quarter.
+</code></pre>
+<p>This chunk does not provide much context and it would be hard to retrieve it from a knowledge base.
+However, if we contextualize it, it becomes much easier to retrieve:</p>
+<pre><code>This chunk is from an SEC filing on ACME corp's performance in Q2 2023; the previous quarter's revenue was $314 million. The company's revenue grew by 3% over the previous quarter.
+</code></pre>
+<p>A similarity search for a query asking about the revenue growth of ACME corp would most likely miss the first chunk, but probably retrieve the second one.</p>
+<p>There are many ways to approach contextualization and the correct approach depends on the use case.
+Additionally, contextualization of chunks adds a lot of overhead during the chunking process.
+It is therefore important to weigh the benefits of contextualization against the cost.</p>
 
                     </main>
 
