@@ -431,3 +431,230 @@ Additionally, other vector databases like Faiss support even more sophisticated 
 For most practical purposes, `pgvector` combined with the IVFFlat index is sufficient.
 Nevertheless, we encourage you to explore other vector databases and indices to find the best fit for your use case.
 After all, the core idea behind all vector databases is the same: they enable us to store embeddings and perform efficient similarity searches using specialized indices.
+
+## Hybrid Search and Rank Fusion
+
+In many cases, you may want to combine the results of a semantic search with a traditional keyword search.
+For example, semantic searches might miss crucial exact matches.
+
+Consider searching for a customer support ticket like "TS-01".
+A similarity search might miss this exact match, but a keyword search would return relevant results.
+
+For example, we might have the following documents:
+
+```python
+documents = [
+    "TS-01 Can't access my account with my password",
+    "TS-02 My password is not working and I don't know what it is so I need help",
+    "TS-03 I need help with my account and I can't log in",
+    "TS-04 I am having trouble with my setup and I don't know what it is",
+    "TS-05 I can't access my account with my password",
+    "TS-06 I need help",
+]
+documents = [doc.split() for doc in documents]
+```
+
+Let's first look at the inverse document frequency (IDF) which is a measure of how specific a keyword is in a document collection.
+The core idea is that the specificity of a keyword is inversely proportional to the number of documents that contain it:
+
+$$
+\text{IDF}(q) = \log \left(\frac{N - n(q) + 0.5}{n(q) + 0.5} + 1\right)
+$$
+
+where $N$ is the total number of documents in the collection and $n(q)$ is the number of documents that contain the keyword $q$.
+
+Here is how we can implement this in Python:
+
+```python
+import math
+
+def get_idf(keyword, documents):
+    N = len(documents)
+    n_q = sum(1 for doc in documents if keyword in doc)
+
+    idf = math.log((N - n_q + 0.5) / (n_q + 0.5) + 1)
+    return idf
+
+idf_i = get_idf("i", documents)
+print(idf_i) # 0.24...
+
+idf_password = get_idf("password", documents)
+print(idf_password) # 0.69...
+
+idf_ts01 = get_idf("TS-01", documents)
+print(idf_ts01) # 1.54...
+```
+
+We can see that rare words like "TS-01" or "password" have a higher IDF score than more common words like "I".
+
+Technically, the IDF score measures specificity, not importance. A rare word is not necessarily an important one.
+However, IDF is often used in algorithms that estimate word importance, because it increases the weight of rare terms—a common goal when building search engines.
+
+One common exact match search algorithm is the BM25 algorithm.
+The core idea is that the relevance of a document to a query depends on the frequency of the query terms in the document.
+Consider a query $q$ containing the keywords $q_1, q_2, \ldots, q_n$ and a document $d$.
+
+The score of the document $d$ for the query $q$ is given by:
+
+$$
+\text{score}(q, d) = \sum_{i=1}^{n} \text{score}(q_i, d)
+$$
+
+The core idea of BM25 is how to compute the score for a single keyword $q_i$.
+
+Here we use the following ideas:
+
+1. Rare words matter more. We want the score to be proportional to the inverse document frequency of the keyword.
+2. The more often the keyword appears in the document, the more relevant it is. We want the score to be proportional to the term frequency of the keyword in the document.
+3. Longer documents should dilute relevance. We want the score to be inversely proportional to the document length.
+
+Here is how a first attempt at the score for a single keyword $q_i$ could look:
+
+$$
+\text{score}(q_i, d) = \text{IDF}(q_i) \cdot \frac{1}{1 + \frac{|d|}{f(q_i, d)}} = \text{IDF}(q_i) \cdot \frac{f(q_i, d)}{f(q_i, d) + |d|}
+$$
+
+where $f(q_i, d)$ is the frequency of the keyword $q_i$ in the document $d$ and $|d|$ is the length of the document.
+
+It turns out that, in practice, this is not a good scoring function. We need to stabilize it to avoid over-penalizing longer documents or over-rewarding repeated words.
+A full derivation of the BM25 scoring function is beyond the scope of this book, so we will simply give you the final formula:
+
+$$
+\text{score}(q_i, d) = \text{IDF}(q_i) \cdot \frac{f(q_i, d) \cdot (k_1 + 1)}{f(q_i, d) + k_1 \cdot (1 - b + b \cdot \frac{|d|}{avgdl})}
+$$
+
+Here $k_1$ and $b$ are parameters that we can tune, typically setting them to $1.2 < k_1 < 2.0$ and $0.75 < b < 1.0$.
+Additionally, $avgdl$ is the average document length in the document collection.
+
+Let's implement this in Python:
+
+```python
+def get_bm25(query_keywords, document, documents, k1=1.5, b=0.75):
+    avgdl = sum(len(doc) for doc in documents) / len(documents)
+
+    doc_len = len(document)
+
+    score = 0
+    for keyword in query_keywords:
+        f_qi_d = document.count(keyword)
+
+        if f_qi_d == 0:
+            continue
+
+        idf = get_idf(keyword, documents)
+
+        keyword_score = idf * (f_qi_d * (k1 + 1)) / (f_qi_d + k1 * (1 - b + b * (doc_len / avgdl)))
+        score += keyword_score
+
+    return score
+```
+
+Let’s test the BM25 score using an example query:
+
+```python
+query = ["TS-01", "I", "password"]
+for i, doc in enumerate(documents):
+    score = get_bm25(query, doc, documents)
+    print(f"Document {i+1} BM25 score: {round(score, 2)}")
+```
+
+This will output:
+
+```
+Document 1 BM25 score: 2.53
+Document 2 BM25 score: 0.84
+Document 3 BM25 score: 0.33
+Document 4 BM25 score: 0.31
+Document 5 BM25 score: 1.01
+Document 6 BM25 score: 0.34
+```
+
+The first document has by far the highest score which is exactly what we would expect thanks to the presence of the keyword "TS-01".
+Note that it doesn't matter that the keyword "I" is absent from this document and present in the other documents because "I" is such a common word that its IDF is close to 0.
+However, the presence of "TS-01" matters a great deal because it is a highly specific keyword and we value it accordingly.
+
+One more thing to note in practice is that you need to convert every document and query into a list of keywords.
+In this case we have simply split the documents and the query into words.
+However, in practice we would use a more sophisticated method, which could include removing stop words and applying stemming or lemmatization.
+
+Now that we have an additional way to score documents by considering exact matches, we need to meaningfully combine the results of the semantic search and the keyword search.
+
+Theoretically, we could take the union of the semantic search results and the keyword search results.
+However, this approach would either return an excessively large set of documents or discard too many.
+Ranking the documents by relevance is therefore essential, and this is straightforward when working with a single search type.
+
+For example, for the semantic search, we can use the cosine similarity to rank the documents.
+For the keyword search, we can use the BM25 score.
+But how can we rank documents that we have retrieved from two or more search types?
+This is where **rank fusion** comes in.
+
+The simplest rank fusion technique is **reciprocal rank fusion**:
+
+$$
+\text{score}(d) = \sum_{r \in \text{retrievers}} \frac{1}{k + \text{rank}_r(d)}
+$$
+
+where $k$ is a constant (typically $k = 60$) and $\text{rank}_r(d)$ is the rank of the document $d$ for the retriever $r$.
+
+Let's implement this in Python:
+
+```python
+def rrf(first_results, second_results, k=60):
+    all_docs = set(doc_id for doc_id, _ in first_results) | set(doc_id for doc_id, _ in second_results)
+
+    first_ranks = {doc_id: rank + 1 for rank, (doc_id, _) in enumerate(first_results)}
+    second_ranks = {doc_id: rank + 1 for rank, (doc_id, _) in enumerate(second_results)}
+
+    rrf_scores = []
+    for doc_id in all_docs:
+        score = 0
+
+        if doc_id in first_ranks:
+            score += 1 / (k + first_ranks[doc_id])
+
+        if doc_id in second_ranks:
+            score += 1 / (k + second_ranks[doc_id])
+
+        rrf_scores.append((doc_id, score))
+
+    rrf_scores.sort(key=lambda x: x[1], reverse=True)
+    return rrf_scores
+```
+
+Let's test this with an example:
+
+```python
+semantic_results = [
+    ("doc1", 0.95),
+    ("doc3", 0.87),
+    ("doc5", 0.82),
+    ("doc2", 0.78),
+    ("doc4", 0.65)
+]
+
+bm25_results = [
+    ("doc2", 2.53),
+    ("doc1", 1.84),
+    ("doc4", 1.12),
+    ("doc6", 0.95),
+    ("doc3", 0.71)
+]
+
+fused_results = rrf(semantic_results, bm25_results)
+
+for rank, (doc_id, score) in enumerate(fused_results, 1):
+    print(f"{rank}. {doc_id}: {round(score, 4)}")
+```
+
+This will output:
+
+```
+1. doc1: 0.0325
+2. doc2: 0.032
+3. doc3: 0.0315
+4. doc4: 0.0313
+5. doc5: 0.0159
+6. doc6: 0.0156
+```
+
+We can see that the ranks of the documents depend on both the semantic search and the keyword search.

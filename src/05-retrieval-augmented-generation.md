@@ -191,8 +191,6 @@ def fixed_size_chunking(document, chunk_size):
     return [document[i:i+chunk_size] for i in range(0, len(document), chunk_size)]
 
 chunks = fixed_size_chunking(document, 100)
-for chunk in chunks[:3]:
-    print(repr(chunk))
 ```
 
 The issue with this approach is that it will split the document at arbitrary points.
@@ -210,6 +208,10 @@ With longer documents, this will become a big problem as we will split context b
 A straightforward improvement to fixed-size chunking is **sliding window chunking** where each new chunk slides forward while retaining some overlap with the previous chunk.
 This allows us to retain some context between the chunks.
 
+![Sliding Window Chunking](./images/simple_chunking.svg)
+
+Here is how the implementation looks like:
+
 ```python
 def sliding_window_chunking(document, chunk_size, overlap):
     chunks = []
@@ -218,8 +220,6 @@ def sliding_window_chunking(document, chunk_size, overlap):
     return chunks
 
 chunks = sliding_window_chunking(document, 100, 20)
-for chunk in chunks[:3]:
-    print(repr(chunk))
 ```
 
 Here are the first three chunks:
@@ -235,7 +235,7 @@ This is slightly better, but still not great.
 The problem with both of these approaches is that they are not aware of the content of the document.
 They will always split the document at the same place regardless of the actual document structure.
 
-A more sophisticated approach is to use**recursive chunking** where we define a hierarchy of separators and use them to recursively split the document into smaller chunks.
+A more sophisticated approach is to use **recursive chunking** where we define a hierarchy of separators and use them to recursively split the document into smaller chunks.
 For instance, we might prioritize separators in the following order:
 
 - Paragraphs (split by `\n\n`)
@@ -312,11 +312,9 @@ def recursive_chunking(text, separators, max_len):
     return chunks
 
 chunks = recursive_chunking(document, ['\n\n', '.', ','], 100)
-for chunk in chunks[:3]:
-    print(repr(chunk))
 ```
 
-This outputs the following:
+Here are the first three chunks:
 
 ```
 '\nJohn Doe is the CEO of ExampleCorp'
@@ -354,8 +352,6 @@ def markdown_chunking(document):
     return document.split("\n\n##")
 
 chunks = markdown_chunking(document)
-for chunk in chunks:
-    print(repr(chunk))
 ```
 
 A real implementation would be more complex and might account for headings of different levels, code blocks, and other constructs.
@@ -652,8 +648,7 @@ One possible approach is outlined in the Anthropic paper [Contextual Retrieval](
 
 Here is how their prompt looks like:
 
-````
-
+```
 <document>
 {{WHOLE_DOCUMENT}}
 </document>
@@ -683,4 +678,3 @@ A similarity search for a query asking about the revenue growth of ACME corp wou
 There are many ways to approach contextualization and the correct approach depends on the use case.
 Additionally, contextualization of chunks adds a lot of overhead during the chunking process.
 It is therefore important to weigh the benefits of contextualization against the cost.
-````
