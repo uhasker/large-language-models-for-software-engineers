@@ -91,22 +91,20 @@ def dot_product(embedding1, embedding2):
     return sum(x * y for x, y in zip(embedding1, embedding2))
 
 
-def get_embedding_similarity(text1, text2):
-    embedding1 = generate_embedding(text1)
-    embedding2 = generate_embedding(text2)
-    return dot_product(embedding1, embedding2)
+def get_sentences(document):
+    return [s.strip() for s in document.split(".") if s.strip()]
 
 
 def semantic_chunking(document, threshold):
-    sentences = document.split(".")
+    sentences = get_sentences(document)
+    embeddings = [generate_embedding(sentence) for sentence in sentences]
+
     chunks = []
     for i in range(len(sentences)):
         if i == 0:
             chunks.append(sentences[i])
         else:
-            embedding_similarity = get_embedding_similarity(
-                sentences[i - 1], sentences[i]
-            )
+            embedding_similarity = dot_product(embeddings[i - 1], embeddings[i])
             if embedding_similarity < threshold:
                 chunks.append(sentences[i])
             else:
@@ -116,5 +114,59 @@ def semantic_chunking(document, threshold):
 
 print("Semantic chunking:")
 chunks = semantic_chunking(document, 0.3)
+for chunk in chunks:
+    print(repr(chunk))
+
+
+def get_min_sim(chunk_embeddings):
+    if len(chunk_embeddings) == 1:
+        return 0.3
+
+    min_sim = float("inf")
+    for i in range(len(chunk_embeddings)):
+        for j in range(i + 1, len(chunk_embeddings)):
+            sim = dot_product(chunk_embeddings[i], chunk_embeddings[j])
+            min_sim = min(min_sim, sim)
+    return min_sim
+
+
+def get_max_sim(chunk_embeddings, sentence_embedding):
+    max_sim = 0
+    for chunk_embedding in chunk_embeddings:
+        sim = dot_product(sentence_embedding, chunk_embedding)
+        max_sim = max(max_sim, sim)
+    return max_sim
+
+
+def max_min_semantic_chunking(document):
+    sentences = get_sentences(document)
+    embeddings = [generate_embedding(sentence) for sentence in sentences]
+
+    chunks = []
+    current_chunk = sentences[:1]
+    current_chunk_embeddings = embeddings[:1]
+
+    for i in range(1, len(sentences)):
+        sentence = sentences[i]
+        sentence_embedding = embeddings[i]
+        min_sim = get_min_sim(current_chunk_embeddings)
+        max_sim = get_max_sim(current_chunk_embeddings, sentence_embedding)
+
+        if max_sim > min_sim:
+            current_chunk.append(sentence)
+            current_chunk_embeddings.append(sentence_embedding)
+        else:
+            chunks.append(". ".join(current_chunk))
+            current_chunk = [sentence]
+            current_chunk_embeddings = [sentence_embedding]
+
+    if current_chunk:
+        chunks.append(". ".join(current_chunk))
+
+    return chunks
+
+
+print("\nMax-min semantic chunking:")
+chunks = max_min_semantic_chunking(document)
 for chunk in chunks:
     print(repr(chunk))
