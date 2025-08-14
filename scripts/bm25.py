@@ -1,31 +1,33 @@
 import math
 
 
-def get_idf(keyword, documents):    
+def get_idf(keyword, documents):
     N = len(documents)
     n_q = sum(1 for doc in documents if keyword in doc)
-    
+
     idf = math.log((N - n_q + 0.5) / (n_q + 0.5) + 1)
     return idf
 
 
 def get_bm25(query_keywords, document, documents, k1=1.5, b=0.75):
     avgdl = sum(len(doc) for doc in documents) / len(documents)
-    
+
     doc_len = len(document)
-    
+
     score = 0
     for keyword in query_keywords:
         f_qi_d = document.count(keyword)
-        
+
         if f_qi_d == 0:
             continue
-            
+
         idf = get_idf(keyword, documents)
-        
-        keyword_score = idf * (f_qi_d * (k1 + 1)) / (f_qi_d + k1 * (1 - b + b * (doc_len / avgdl)))
+
+        keyword_score = (
+            idf * (f_qi_d * (k1 + 1)) / (f_qi_d + k1 * (1 - b + b * (doc_len / avgdl)))
+        )
         score += keyword_score
-    
+
     return score
 
 
@@ -52,5 +54,4 @@ print(idf_ts01)
 query = ["TS-01", "I", "password"]
 for i, doc in enumerate(documents):
     score = get_bm25(query, doc, documents)
-    print(f"Document {i+1} BM25 score: {round(score, 2)}")
-
+    print(f"Document {i + 1} BM25 score: {round(score, 2)}")
