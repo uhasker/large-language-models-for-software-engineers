@@ -67,7 +67,7 @@ user_query_embedding = generate_embedding(user_query)
 ```
 
 We can now perform a similarity search to find the most relevant documents.
-Since OpenAI embeddings are normalized, we can use the dot product to compute the similarity between the query embedding and the document embeddings.
+Since OpenAI embeddings are normalized, we can just use the dot product to compute the similarity between the query embedding and the document embeddings.
 Then, it's just a matter of picking the top K documents with the highest similarity to the query:
 
 ```python
@@ -645,7 +645,7 @@ Therefore, in real applications, you need to weigh the benefits of semantic chun
 Apart from changing the chunking strategy, we can also improve performance by contextualizing the chunks.
 This can improve the retrieval process as the LLM now has more information to generate a response.
 
-For example, consider the following chunk from a document about ACME Corp's performance in Q2 2023:
+For example, consider the following chunk from a document about Example Corp's performance in Q2 2023:
 
 ```
 The company's revenue grew by 3% over the previous quarter.
@@ -653,7 +653,7 @@ The company's revenue grew by 3% over the previous quarter.
 
 On its own, this statement is ambiguous.
 It doesn't specify which company we're talking about, or which quarter the data refers to.
-If a user queries the knowledge base for “ACME Corp Q2 2023 revenue growth,” this chunk is unlikely to surface despite the fact that it contains relevant information.
+If a user queries the knowledge base for “Example Corp Q2 2023 revenue growth,” this chunk is unlikely to surface despite the fact that it contains relevant information.
 
 By adding the missing context, retrieval can become much more effective.
 
@@ -661,15 +661,26 @@ One straightforward way to add context is to prepend a generic document summary 
 
 ```
 Document summary:
-This document is the SEC filing on ACME corp's performance in Q2 2023.
+This document is the SEC filing on Example Corp's performance in Q2 2023.
 
 Chunk:
 The company's revenue grew by 3% over the previous quarter.
 ```
 
-The problem with this approach is that this will increase the size of all the chunks and also add a lot of noise to the chunks.
+This is easy to implement and results in every chunk being contextually enriched.
+
+However, the problem with this approach is that this will increase the size of all the chunks and also add a lot of noise to the chunks.
 If you embed the combined text (chunk + summary), the embedding will more likely reflect the general document summary than the specific content of the chunk.
-This can cause irrelevant matches — for example, a search for “ACME Corp’s executive bonuses” might incorrectly return this revenue-growth chunk, simply because it contains the summary of the SEC filing.
+You are essentially repeating broad context across the entire embedding space.
+
+With the above approach, every chunk— whether it's about quarterly revenue, hiring plans, or something else entirely—will contain the phrase "This document is the SEC filing on Example Corp's performance in Q2 2023".
+While this helps ensure that a search for Example Corp and Q2 2023 won't miss the relevant chunks, it can also cause irrelevant matches.
+
+Consider an example scenario where you are searching for "Example Corp's executive bonuses".
+The most relevant chunk will probably the one that explicitly mentions those bonuses.
+However, because every chunk contains the same general document summary, chunks about unrelated topics may score highly simply because of the generic context.
+
+In short, while this method guarantees that every chunk is tied to the document, it also introduces a lot of noise, potentially reducing retrieval performance.
 
 The **Document Summary Index** approach outlined in [A New Document Summary Index for LLM-powered QA Systems](https://www.llamaindex.ai/blog/a-new-document-summary-index-for-llm-powered-qa-systems-9a32ece2f9ec) tries to mitigate this problem by storing document summaries separately.
 
@@ -681,8 +692,11 @@ Here is how it works:
 4. During retrieval, first retrieve the best-matching documents by searching the document summaries.
    Then, search only for the chunks that belong to the retrieved documents.
 
-This keeps the chunks small and focused, while still using document-level context to improve retrieval.
+The chunks are kept small and focused, while still using document-level context to improve retrieval.
+This reduces irrelevant matches from generic document summaries.
+
 The trade-off is that you will miss relevant chunks in documents whose summaries don't seem related to the query but contain useful details in isolated sections.
+Additionally, this requires two searches: one for the document summaries and one for the chunks.
 
 Yet another approach is **Hypothetical Document Embeddings** (HyDE for short) outlined in the paper [Precise Zero-Shot Dense Retrieval without Relevance Labels](https://arxiv.org/abs/2212.10496) which takes a different angle altogether:
 
@@ -690,8 +704,11 @@ Given a query, the LLM generates a hypothetical document that is likely relevant
 We then embed this hypothetical document and perform retrieval by finding the nearest neighbors of the hypothetical document embedding instead of the query embedding.
 
 This technique works well when your corpus contains text similar in style or structure to the imagined document, since it places the search directly into the “semantic neighborhood” where relevant answers live.
+However, it might fail if the general style differs too much from the actual corpus.
+Additionally, this requires a query-time LLM generation of the hypothetical document which can be quite costly at scale.
+Therefore, HyDE is rarely used in practice unless you have a very specific use case.
 
-However, the most promising approach is outlined in the Anthropic paper [Contextual Retrieval](https://www.anthropic.com/news/contextual-retrieval).
+The most promising approach is outlined in the Anthropic paper [Contextual Retrieval](https://www.anthropic.com/news/contextual-retrieval).
 Here, the authors evaluated the above methods and found them lacking for most practical use cases.
 
 Instead, they propose to postprocess every chunk by adding the document or a document summary and asking an LLM to generate a contextualized chunk.
@@ -712,17 +729,38 @@ Please give a short succinct context to situate this chunk within the overall do
 This could result in a contextualized chunk like the following:
 
 ```
-This chunk is from an SEC filing on ACME corp's performance in Q2 2023; the previous quarter's revenue was $314 million. The company's revenue grew by 3% over the previous quarter.
+This chunk is from an SEC filing on Example Corp's performance in Q2 2023; the previous quarter's revenue was $314 million. The company's revenue grew by 3% over the previous quarter.
 ```
 
 This contextualized version retains the original detail but supplements it with just enough extra information to make retrieval more precise.
 
-Contextualization is a powerful technique that can be used to improve retrieval.
-However, it is important to weigh the benefits of contextualization against the cost.
-Especially with the last approach, every chunk will need to be postprocessed by an LLM which can be quite costly at scale.
-Also, contextualized chunks are longer, so you will need to store and embed more data.
+Compared to simply prepending a document summary, contextual retrieval avoids blindly embedding the same generic context into every chunk.
+Instead, content can be customized to the specific chunk, which makes the chunks more specific and reduces the risk of irrelevant matches.
 
-> With some model providers, you can cut down on the cost by using a technique called **prompt caching** where you can load the document into the cache once and then keep referencing the previously cached content.
+Compared to the Document Summary Index, contextual retrieval doesn't risk missing relevant chunks because a document summary doesn't mention a specific detail we care about.
+Additionally, it doesn't require a two-step retrieval process.
 
-Choosing the right approach depends on your use case and you should always evaluate the performance of your retrieval system before and after contextualization.
-While sometimes it can be a worthwhile investment, in many cases you will find that contextualization is not worth the additional cost.
+Compared to HyDE, contextual retrieval doesn't rely on query-time LLM generation.
+Instead, you need to contextualize the chunks once and then store the contextualized chunks.
+We don't incur any performance penalty at query time.
+
+The main drawback of contextual retrieval is that the document chunking becomes quite costly.
+Every chunk will need to be postprocessed by an LLM which can become problematic at scale.
+However, for many applications, a higher cost at document ingestion time is a worthwhile trade-off for the performance gains at query time.
+Additionally, with some model providers, you can cut down on the cost by using a technique called **prompt caching** where you can load the document into the cache once and then keep referencing the previously cached content.
+
+While contextual chunking tends to perform better than than other methods, choosing the right approach will still depend on your use case.
+It's especially important to evaluate the performance of your retrieval system before and after contextualization and only apply it if it's worth the additional cost.
+
+Finally, contextualization is usually combined with other retrieval strategies.
+For example, here is a full pipeline suggested by the authors of the [Contextual Retrieval](https://www.anthropic.com/news/contextual-retrieval) paper:
+
+1. Break down each document into chunks.
+2. For each chunk, contextualize it using an LLM to generate contextualized chunks.
+3. Create semantic embedding (and TF-IDF encodings) of those chunks.
+4. Use the BM25 algorithm to retrieve the most relevant chunks for a given query.
+5. Use embeddings to retrieve the most relevant chunks based on semantic similarity.
+6. Combine and deduplicate the results using rank fusion.
+7. Add the top k final chunks to the prompt and generate a response.
+
+This pipeline is a good fit for most practical use cases and tends to perform well in practice.
