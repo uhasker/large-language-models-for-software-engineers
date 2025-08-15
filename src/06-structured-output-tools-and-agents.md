@@ -22,14 +22,14 @@ For example, when generating multiple-choice exercises, we want to receive a JSO
 }
 ```
 
-You can try to achieve this by changing the prompt, but even with the best models this will often not work well.
+We can try to achieve this by changing the prompt, but even with the best models this will often not work well.
 Instead, what we would really like to do is to guarantee the correctly **structured output** by changing how the next token is generated.
 
 To achieve this, we first need to define a JSON schema which describes the output format.
 For example, let's say we want to extract information about a person from a text, specifically the name and age.
 We can specify this output using the following JSON schema:
 
-```json
+```python
 schema = {
     "type": "object",
     "properties": {"name": {"type": "string"}, "age": {"type": "integer"}},
@@ -97,7 +97,7 @@ How can we integrate an LLM with such a tool?
 The idea is that we ask the LLM to generate a **tool call** together with the arguments.
 We then execute the requested tool call from within our code, feed the result back to the LLM, and continue the conversation as usual.
 
-To accomplish this, we introduce a new message role called `tool`.
+To accomplish this, the API provides a message role called `tool`.
 Specifically, the `user` message contains the original request, the `assistant` message includes only the tool call the LLM wants to execute, and the `tool` message contains the result of that tool call as produced by our code.
 
 Here is how a conversation including a tool call might look like:
@@ -127,6 +127,10 @@ Here is how a conversation including a tool call might look like:
     "role": "tool",
     "content": "2025-08-05 13:33:55 CEST",
     "tool_call_id": "time_tool"
+  },
+  {
+    "role": "assistant",
+    "content": "The current time in Germany (Central European Summer Time) is 13:38 on August 5, 2025"
   }
 ]
 ```
@@ -134,7 +138,7 @@ Here is how a conversation including a tool call might look like:
 Note that the `assistant` message only includes the tool name with the arguments.
 The actual result of the tool call is part of the `tool` message, not the `assistant` message.
 
-Let's now implement the clock tool in Python.
+Let's give an example implementation of tool calling in Python.
 
 First, we need to define the tool.
 We have to give it a name, a description and a JSON schema for the arguments:
@@ -161,7 +165,7 @@ clock_tool = {
 ```
 
 This is very similar to the JSON schema we used for structured output.
-In fact, we could implement tool calling using the regular structured output API—the fact that OpenAI uses a separate API for tool calling is mostly a technical accident.
+In fact, we could implement tool calling using the regular structured output API—OpenAI’s use of a separate API for tool calling is mostly a technical detail.
 
 Next, we need to make the request to the model:
 
@@ -565,6 +569,7 @@ The book, titled "Large Language Models for Software Engineers," serves as an in
 ```
 
 This demonstrates surprisingly rich behavior emerging from a simple loop.
+
 In this example, we ask the model to describe a book located in our current directory.
 
 The model first decides to call the `list_directory` tool to get a list of files and directories in the current directory.
