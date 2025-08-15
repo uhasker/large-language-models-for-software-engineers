@@ -86,7 +86,7 @@ This means the model predicts `Thank` as the next token with a probability of 0.
 
 Now that we have a list of probabilities, how do we use it to generate the next token?
 
-The simplest approach is to use **greedy sampling**.
+The simplest approach is to use **greedy decoding**.
 This simply means selecting the token with the highest probability:
 
 ```python
@@ -109,7 +109,7 @@ This will output:
 
 Another approach is to actually sample from the list.
 This involves randomly selecting a token from the list, with each token weighted by its probability.
-The higher the probability, the more likely the token will be selected.
+The higher the probability, the more likely it is that the token will be selected.
 
 ```python
 import random
@@ -139,21 +139,21 @@ This will output something along the lines of:
 
 Note how the counts of every token are roughly proportional to their probabilities.
 
-Greedy sampling has a few clear advantages: it's simple, fast, and fully deterministic.
+Greedy decoding has a few clear advantages: it's simple, fast, and fully deterministic.
 Nevertheless, it comes with a downside: it always selects the most likely token—even when that token's probability is relatively low.
-As a result, greedy sampling is often associated with repetitive output.
+As a result, greedy decoding is often associated with repetitive output.
 
-This concern was highlighted in the famous paper [The Curious Case of Neural Text Degeneration](https://arxiv.org/pdf/1904.09751) which shows that greedy sampling—and its close relative, beam search—often leads to repetitive text.
+This concern was highlighted in the famous paper [The Curious Case of Neural Text Degeneration](https://arxiv.org/pdf/1904.09751) which shows that greedy decoding—and its close relative, beam search—often leads to repetitive text.
 However, that study focused on GPT-2, a model that is outdated by today's standards.
 
 More recent research paints a more nuanced picture.
-For instance, [The Good, The Bad, and The Greedy: Evaluation of LLMs Should Not Ignore Non-Determinism](https://arxiv.org/pdf/2407.10457) found that greedy sampling actually outperformed more complex methods in some cases.
+For instance, [The Good, The Bad, and The Greedy: Evaluation of LLMs Should Not Ignore Non-Determinism](https://arxiv.org/pdf/2407.10457) found that greedy decoding actually outperformed more complex methods in some cases.
 Similarly, [A Thorough Examination of Decoding Methods in the Era of LLMs](https://arxiv.org/pdf/2402.06925) argues that no single sampling method is the best—it all depends on the task at hand.
 In practice, that does seem to hold true.
 
-In short, while probabilistic sampling is typically the default, greedy sampling can be a reasonable—and at times even preferable—alternative.
+In short, while probabilistic sampling is typically the default, greedy decoding can be a reasonable—and at times even preferable—alternative.
 
-The discussion around greedy sampling and probabilistic sampling highlights just how shaky the foundations of LLMs are and how quickly the field moves.
+The discussion around greedy decoding and probabilistic sampling highlights just how shaky the foundations of LLMs are and how quickly the field moves.
 We still lack a definitive answer to something as basic as the best sampling method—let alone more complex questions.
 
 ## The Temperature Parameter
@@ -206,16 +206,16 @@ Here's what we observe:
 
 Importantly, the relative ranking of tokens remains unchanged—only the probabilities are rescaled.
 
-This makes sense when we look back at the formula.
-For T = 1, we get:
+All of this can be explained by looking at the formula more closely.
+For example, when \\(T = 1\\), we get:
 
 $$
 Q(x_i) = \frac{P(x_i)}{\sum_{j=1}^{n} P(x_j)} = P(x_i)
 $$
 
-Therefore, applying a temperature of T = 1 leaves the probabilities unchanged.
+Therefore, applying a temperature of \\(T = 1\\) leaves the probabilities unchanged.
 
-For T < 1, we get:
+On the other hand, for \\(T < 1\\), we get:
 
 $$
 Q(x_i) = \frac{P(x_i)^S}{\sum_{j=1}^{n} P(x_j)^S}
@@ -228,7 +228,7 @@ This disproportionately suppresses lower-probability values.
 
 For example, `0.9 ** 10` is approximately `0.35` while `0.1 ** 10` is approximately `1e-10` meaning that the smaller probability is effectively eliminated from the distribution.
 
-The opposite is true for T > 1.
+The opposite is true for \\(T > 1\\).
 Here we get:
 
 $$
@@ -304,27 +304,28 @@ In actual applications, people often use values of 0.4 or 0.7, but this isn't re
 
 Generally speaking, some people say that:
 
-- lower temperatures (`T <= 0.7`) are suitable for tasks requiring precision and reliability, e.g. factual question answering
-- moderate temperatures (`0.7 < T <= 1`) are suitable for general-purpose conversations where you need reliability but also some degree of creativity, e.g. for a chat bot
-- higher temperatures (`T > 1`) are suitable for creative endeavors, e.g. for storytelling or brainstorming
+- lower temperatures (\\(T <= 0.7\\)) are suitable for tasks requiring precision and reliability, e.g. factual question answering
+- moderate temperatures (\\(0.7 < T <= 1\\)) are suitable for general-purpose conversations where you need reliability but also some degree of creativity, e.g. for a chatbot
+- higher temperatures (\\(T > 1\\)) are suitable for creative endeavors, e.g. for storytelling or brainstorming
 
 Again, this has practically no rigorous theoretical basis and seems to just be something application developers have empirically converged on.
 So take these values with a grain of salt—or rather, a full salt mill.
 In real-world scenarios, you will have to experiment with different temperatures to find the one that works best for your task.
 
-An interesting edge case is T = 0.
+An interesting edge case is \\(T = 0\\).
 Technically, this is undefined because we divide by zero in the formula.
-Usually, this edge case is treated as roughly equivalent to greedy sampling and models will try to pick the most likely token.
+Usually, this particular case is treated as roughly equivalent to greedy decoding and models will try to pick the most likely token.
 This aligns with the general intuition: lower temperatures yield more deterministic outputs.
 
-> Note that the OpenAI API will not return fully deterministic results even for T = 0.
+> Note that the OpenAI API will not return fully deterministic results even for \\(T = 0\\).
+> However, you can improve reproducibility by setting the `seed` parameter, although, even then, the results might not be fully deterministic.
 > The reasons for this are complicated and beyond the scope of this book.
 
 ## Top-K and Top-P Sampling
 
-So far, we have covered greedy sampling and probabilistic sampling.
+So far, we have covered greedy decoding and probabilistic sampling.
 
-Greedy sampling is deterministic and always picks the most likely token.
+Greedy decoding is deterministic and always picks the most likely token.
 Probabilistic sampling is non-deterministic and picks a token from the distribution potentially adjusted by the temperature parameter.
 
 Sometimes, we want a middle ground: sampling probabilistically while constraining the selection to avoid low-quality tokens.
@@ -427,7 +428,7 @@ We can see this in the output:
 
 ![Top-P Sampling](images/top_p.svg)
 
-Let's what happens if we set `p=0.8`:
+Let's see what happens if we set `p=0.8`:
 
 ```python
 counts = defaultdict(int)
