@@ -706,7 +706,7 @@ Hello 1.9382905474713714e-05
 <p>This means the model predicts <code>Thank</code> as the next token with a probability of 0.90, <code>I'm</code> with 0.09, and so on.</p>
 <h2 id="sampling-from-the-list"><a class="header" href="#sampling-from-the-list">Sampling from the List</a></h2>
 <p>Now that we have a list of probabilities, how do we use it to generate the next token?</p>
-<p>The simplest approach is to use <strong>greedy sampling</strong>.
+<p>The simplest approach is to use <strong>greedy decoding</strong>.
 This simply means selecting the token with the highest probability:</p>
 <pre><code class="language-python">def greedy_sample(logprobs):
     return max(logprobs, key=lambda item: item["prob"])
@@ -723,7 +723,7 @@ print(greedy_sample(next_token_logprobs))
 </code></pre>
 <p>Another approach is to actually sample from the list.
 This involves randomly selecting a token from the list, with each token weighted by its probability.
-The higher the probability, the more likely the token will be selected.</p>
+The higher the probability, the more likely it is that the token will be selected.</p>
 <pre><code class="language-python">import random
 from collections import defaultdict
 
@@ -746,17 +746,17 @@ print(counts)
 <pre><code>{'Apple': 598, 'Banana': 303, 'Cherry': 99}
 </code></pre>
 <p>Note how the counts of every token are roughly proportional to their probabilities.</p>
-<p>Greedy sampling has a few clear advantages: it's simple, fast, and fully deterministic.
+<p>Greedy decoding has a few clear advantages: it's simple, fast, and fully deterministic.
 Nevertheless, it comes with a downside: it always selects the most likely token—even when that token's probability is relatively low.
-As a result, greedy sampling is often associated with repetitive output.</p>
-<p>This concern was highlighted in the famous paper <a href="https://arxiv.org/pdf/1904.09751">The Curious Case of Neural Text Degeneration</a> which shows that greedy sampling—and its close relative, beam search—often leads to repetitive text.
+As a result, greedy decoding is often associated with repetitive output.</p>
+<p>This concern was highlighted in the famous paper <a href="https://arxiv.org/pdf/1904.09751">The Curious Case of Neural Text Degeneration</a> which shows that greedy decoding—and its close relative, beam search—often leads to repetitive text.
 However, that study focused on GPT-2, a model that is outdated by today's standards.</p>
 <p>More recent research paints a more nuanced picture.
-For instance, <a href="https://arxiv.org/pdf/2407.10457">The Good, The Bad, and The Greedy: Evaluation of LLMs Should Not Ignore Non-Determinism</a> found that greedy sampling actually outperformed more complex methods in some cases.
+For instance, <a href="https://arxiv.org/pdf/2407.10457">The Good, The Bad, and The Greedy: Evaluation of LLMs Should Not Ignore Non-Determinism</a> found that greedy decoding actually outperformed more complex methods in some cases.
 Similarly, <a href="https://arxiv.org/pdf/2402.06925">A Thorough Examination of Decoding Methods in the Era of LLMs</a> argues that no single sampling method is the best—it all depends on the task at hand.
 In practice, that does seem to hold true.</p>
-<p>In short, while probabilistic sampling is typically the default, greedy sampling can be a reasonable—and at times even preferable—alternative.</p>
-<p>The discussion around greedy sampling and probabilistic sampling highlights just how shaky the foundations of LLMs are and how quickly the field moves.
+<p>In short, while probabilistic sampling is typically the default, greedy decoding can be a reasonable—and at times even preferable—alternative.</p>
+<p>The discussion around greedy decoding and probabilistic sampling highlights just how shaky the foundations of LLMs are and how quickly the field moves.
 We still lack a definitive answer to something as basic as the best sampling method—let alone more complex questions.</p>
 <h2 id="the-temperature-parameter"><a class="header" href="#the-temperature-parameter">The Temperature Parameter</a></h2>
 <p>The temperature parameter plays a key role in probabilistic sampling.
@@ -796,13 +796,13 @@ print(round_probs(apply_temperature(probs, 2))) # [0.47, 0.33, 0.19]
 <li>Temperatures above 1 make the distribution flatter—spreading out probability mass across more tokens.</li>
 </ul>
 <p>Importantly, the relative ranking of tokens remains unchanged—only the probabilities are rescaled.</p>
-<p>This makes sense when we look back at the formula.
-For T = 1, we get:</p>
+<p>All of this can be explained by looking at the formula more closely.
+For example, when \(T = 1\), we get:</p>
 <p>$$
 Q(x_i) = \frac{P(x_i)}{\sum_{j=1}^{n} P(x_j)} = P(x_i)
 $$</p>
-<p>Therefore, applying a temperature of T = 1 leaves the probabilities unchanged.</p>
-<p>For T &lt; 1, we get:</p>
+<p>Therefore, applying a temperature of \(T = 1\) leaves the probabilities unchanged.</p>
+<p>On the other hand, for \(T &lt; 1\), we get:</p>
 <p>$$
 Q(x_i) = \frac{P(x_i)^S}{\sum_{j=1}^{n} P(x_j)^S}
 $$</p>
@@ -810,7 +810,7 @@ $$</p>
 <p>Therefore, each probability is raised to a power greater than 1.
 This disproportionately suppresses lower-probability values.</p>
 <p>For example, <code>0.9 ** 10</code> is approximately <code>0.35</code> while <code>0.1 ** 10</code> is approximately <code>1e-10</code> meaning that the smaller probability is effectively eliminated from the distribution.</p>
-<p>The opposite is true for T &gt; 1.
+<p>The opposite is true for \(T &gt; 1\).
 Here we get:</p>
 <p>$$
 Q(x_i) = \frac{P(x_i)^S}{\sum_{j=1}^{n} P(x_j)^S}
@@ -864,24 +864,25 @@ To quote from the <a href="https://arxiv.org/pdf/2303.08774">GPT-4 technical rep
 In actual applications, people often use values of 0.4 or 0.7, but this isn't really backed by any theory either.</p>
 <p>Generally speaking, some people say that:</p>
 <ul>
-<li>lower temperatures (<code>T &lt;= 0.7</code>) are suitable for tasks requiring precision and reliability, e.g. factual question answering</li>
-<li>moderate temperatures (<code>0.7 &lt; T &lt;= 1</code>) are suitable for general-purpose conversations where you need reliability but also some degree of creativity, e.g. for a chat bot</li>
-<li>higher temperatures (<code>T &gt; 1</code>) are suitable for creative endeavors, e.g. for storytelling or brainstorming</li>
+<li>lower temperatures (\(T &lt;= 0.7\)) are suitable for tasks requiring precision and reliability, e.g. factual question answering</li>
+<li>moderate temperatures (\(0.7 &lt; T &lt;= 1\)) are suitable for general-purpose conversations where you need reliability but also some degree of creativity, e.g. for a chatbot</li>
+<li>higher temperatures (\(T &gt; 1\)) are suitable for creative endeavors, e.g. for storytelling or brainstorming</li>
 </ul>
 <p>Again, this has practically no rigorous theoretical basis and seems to just be something application developers have empirically converged on.
 So take these values with a grain of salt—or rather, a full salt mill.
 In real-world scenarios, you will have to experiment with different temperatures to find the one that works best for your task.</p>
-<p>An interesting edge case is T = 0.
+<p>An interesting edge case is \(T = 0\).
 Technically, this is undefined because we divide by zero in the formula.
-Usually, this edge case is treated as roughly equivalent to greedy sampling and models will try to pick the most likely token.
+Usually, this particular case is treated as roughly equivalent to greedy decoding and models will try to pick the most likely token.
 This aligns with the general intuition: lower temperatures yield more deterministic outputs.</p>
 <blockquote>
-<p>Note that the OpenAI API will not return fully deterministic results even for T = 0.
+<p>Note that the OpenAI API will not return fully deterministic results even for \(T = 0\).
+However, you can improve reproducibility by setting the <code>seed</code> parameter, although, even then, the results might not be fully deterministic.
 The reasons for this are complicated and beyond the scope of this book.</p>
 </blockquote>
 <h2 id="top-k-and-top-p-sampling"><a class="header" href="#top-k-and-top-p-sampling">Top-K and Top-P Sampling</a></h2>
-<p>So far, we have covered greedy sampling and probabilistic sampling.</p>
-<p>Greedy sampling is deterministic and always picks the most likely token.
+<p>So far, we have covered greedy decoding and probabilistic sampling.</p>
+<p>Greedy decoding is deterministic and always picks the most likely token.
 Probabilistic sampling is non-deterministic and picks a token from the distribution potentially adjusted by the temperature parameter.</p>
 <p>Sometimes, we want a middle ground: sampling probabilistically while constraining the selection to avoid low-quality tokens.</p>
 <p>In <strong>top-k sampling</strong>, we consider only the top k most probable tokens and then sample from this restricted set:</p>
@@ -958,7 +959,7 @@ This means that the tokens "Apple", "Banana" and "Cherry" are included, while "D
 <pre><code>{'Banana': 356, 'Apple': 531, 'Cherry': 113}
 </code></pre>
 <p><img src="images/top_p.svg" alt="Top-P Sampling" /></p>
-<p>Let's what happens if we set <code>p=0.8</code>:</p>
+<p>Let's see what happens if we set <code>p=0.8</code>:</p>
 <pre><code class="language-python">counts = defaultdict(int)
 for _ in range(1000):
     counts[sample_top_p(logprobs, p=0.8)["token"]] += 1
