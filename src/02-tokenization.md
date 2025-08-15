@@ -23,14 +23,14 @@ Now, here is the key point:
 **LLMs generate text one token at a time.**
 
 When you feed text into an LLM, it's first split into tokens.
-The model generates one token at a time, each based on the input plus all previously generated tokens.
-This continues until it produces a special token called the **end-of-sequence token**, or reaches a predefined limit.
+The model then produces one token after another, each based on the input plus all previously generated tokens.
+This continues until the model produces a special token called the **end-of-sequence token**, or reaches a predefined limit.
 
 Consider the input text "How are you?".
 
 The model first splits the text into tokens: `'How'`, `' '`, `'are'`, `' '`, `'you'`, `'?'`.
 
-It then begins generating one token at a time.
+It then begins generating the tokens one by one.
 The first token might be `'I'`, producing a new input text:
 "How are you? I"
 
@@ -57,18 +57,18 @@ Tokenizers are usually trained on a large corpus of text and learn to split it i
 For example, the GPT models from OpenAI use a **byte-pair encoding (BPE)** tokenizer.
 BPE starts with a vocabulary containing single characters and progressively merges the most frequent pairs of existing tokens to form new tokens.
 The tokenizer might start with the vocabulary containing all the characters in the alphabet.
-It might notice that 't' and 'h' often appear together and merge them into 'th'.
-Later, it may merge 'th' and 'e' into 'the'.
+It might notice that `'t'` and `'h'` often appear together and merge them into `'th'`.
+Later, it may merge `'th'` and `'e'` into `'the'`.
 This continues until a certain number of tokens is reached.
 
 We can use the `tiktoken` library to see the tokens that a given LLM uses.
 
-> If you don't want to go through the hassle of installing the library, you can also go to https://platform.openai.com/tokenizer and paste your text there.
+> If you don't want to go through the hassle of installing the library, you can also go to [this web demo](https://platform.openai.com/tokenizer) and paste your text there.
 
 First, we need to install the library:
 
 ```bash
-pip install tiktoken
+python -m pip install tiktoken
 ```
 
 Then, we can use the library to get the tokens for a given model:
