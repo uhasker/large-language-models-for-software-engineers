@@ -2,10 +2,18 @@
 
 ## Closed-ended Benchmarks
 
-The most straightforward way to evaluate the performance of an LLM is through multiple-choice and exact-answer benchmarking.
+We have already discussed that building an application that uses LLMs is hard—they can produce wrong responses, retrieve irrelevant information, and outright hallucinate.
+Therefore, before deploying an LLM-based application, we need to evaluate its quality.
+This is commonly done through **benchmarking**.
+
+Benchmarking is the process of evaluating the performance of an LLM or an LLM-based application on a specific task.
+There are essentially two types of benchmarks: **closed-ended** and **open-ended**.
+
+The most straightforward way to evaluate the performance of an LLM is through closed-ended benchmarks like multiple-choice and exact-answer benchmarks.
 Such a benchmark consists of a set of questions together with the expected answers.
 
 The most famous example of a multiple-choice benchmark is the **MMLU** (Massive Multitask Language Understanding) benchmark from the paper [Measuring Massive Multitask Language Understanding](https://arxiv.org/abs/2009.03300).
+This benchmarks consists of a set of multiple-choice questions that cover a wide range of topics.
 
 Here is an example of a question from the MMLU benchmark:
 
@@ -18,13 +26,14 @@ Which of the following statements about the lanthanide elements is NOT true?
 ```
 
 In this particular case, the correct answer is (D).
-Of course, I knew that and did not need to look this up at all.
+
+> Of course, I knew that and did not need to look this up at all.
 
 We can evaluate an LLM by presenting it with the questions and answer options, then checking whether its response matches the correct answer.
 
 Here is an example of how we might approach this.
 
-Let's define a function that generates a response:
+Let us once again define a function that generates a response:
 
 ```python
 import os
@@ -227,6 +236,15 @@ Score:
 We can estimate overall performance by repeating this process for a large set of questions and calculating the average score of the LLM's responses.
 
 This presents a classic chicken-and-egg problem: how can we be sure that the judge LLM is reliable?
-One way to find this out is to have a human judge evaluate the responses and check whether the human judge's score is correlated with the judge LLM's score.
+
+We can find out by having a human judge evaluate the responses and check whether the human judge's score is correlated with the judge LLM's score.
 If it is, we can be reasonably confident that the judge LLM is a good judge.
+Even better, we can collect multiple human judgments and check how well the LLM's score correlates with those judgments while paying special attention to the scores where all the human judges agree.
+
 Still, LLM-as-a-judge approaches remain difficult to calibrate and validate, and they require careful design, testing, and ongoing human oversight to ensure credibility.
+
+Benchmarks, whether closed- or open-ended, may sound simple in theory but are often messy in practice.
+The choice of questions, scoring method, and judging criteria all interact in subtle ways with the task at hand.
+There’s no universal recipe for a "good" benchmark — what works for a chemistry question set may fail for a creative writing task, and vice versa.
+That’s why, beyond any generic best practices, it’s worth investing the time to deeply understand your specific domain, its data, and its evaluation goals before designing or adopting a benchmark.
+A good benchmark can yield meaningful insights, while a bad one can be worse than no benchmark at all.

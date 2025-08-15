@@ -648,7 +648,7 @@ The company's revenue grew by 3% over the previous quarter.
 
 On its own, this statement is ambiguous.
 It doesn't specify which company we're talking about, or which quarter the data refers to.
-If a user queries the knowledge base for “Example Corp Q2 2023 revenue growth,” this chunk is unlikely to surface despite the fact that it contains relevant information.
+If a user queries the knowledge base for "Example Corp Q2 2023 revenue growth," this chunk is unlikely to surface despite the fact that it contains relevant information.
 
 By adding the missing context, retrieval can become much more effective.
 
@@ -698,7 +698,7 @@ Yet another approach is **Hypothetical Document Embeddings** (HyDE for short) ou
 Given a query, the LLM generates a hypothetical document that is likely relevant to the query, essentially a synthetic "good answer".
 We then embed this hypothetical document and perform retrieval by finding the nearest neighbors of the hypothetical document embedding instead of the query embedding.
 
-This technique works well when your corpus contains text similar in style or structure to the imagined document, since it places the search directly into the “semantic neighborhood” where relevant answers live.
+This technique works well when your corpus contains text similar in style or structure to the imagined document, since it places the search directly into the "semantic neighborhood" where relevant answers live.
 However, it might fail if the general style differs too much from the actual corpus.
 
 Additionally, HyDE requires a query-time LLM generation of the hypothetical document which can be quite costly at scale.

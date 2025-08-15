@@ -292,7 +292,7 @@ print(round_probs(apply_temperature(logprobs, 2))) # [0.47, 0.33, 0.19]
 The results are the same as before.
 
 So, how should you choose the optimal temperature?
-Once again, it depends on the task—and there's little rigorous research on how to choose the “best” temperature.
+Once again, it depends on the task—and there's little rigorous research on how to choose the "best" temperature.
 
 Even OpenAI doesn't offer a definitive recommendation.
 To quote from the [GPT-4 technical report](https://arxiv.org/pdf/2303.08774):

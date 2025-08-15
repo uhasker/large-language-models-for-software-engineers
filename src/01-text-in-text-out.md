@@ -292,11 +292,11 @@ This might output something like:
 Let's think step by step:
 The phrase "not bad" typically indicates a mildly positive sentiment.
 However, the phrase "wouldn't watch it again" indicates a negative sentiment.
-Considering both parts of the review, the positive sentiment is weak due to the mild phrase “not bad,” while the negative sentiment—expressed by the reviewer's unwillingness to re-watch the movie—has a stronger impact.
+Considering both parts of the review, the positive sentiment is weak due to the mild phrase "not bad," while the negative sentiment—expressed by the reviewer's unwillingness to re-watch the movie—has a stronger impact.
 Overall, the review is negative.
 ```
 
-We essentially give the model “space to think” by prompting it to work through the problem before producing the final answer.
+We essentially give the model "space to think" by prompting it to work through the problem before producing the final answer.
 This is especially useful for tasks that involve multiple steps or require some level of reasoning.
 
 > A related idea is found in **reasoning models**, which also break problems into intermediate steps but do so in a different way.
