@@ -400,10 +400,10 @@ The movie was not bad, but I wouldn't watch it again.
 <pre><code>Let's think step by step:
 The phrase "not bad" typically indicates a mildly positive sentiment.
 However, the phrase "wouldn't watch it again" indicates a negative sentiment.
-Considering both parts of the review, the positive sentiment is weak due to the mild phrase “not bad,” while the negative sentiment—expressed by the reviewer's unwillingness to re-watch the movie—has a stronger impact.
+Considering both parts of the review, the positive sentiment is weak due to the mild phrase "not bad," while the negative sentiment—expressed by the reviewer's unwillingness to re-watch the movie—has a stronger impact.
 Overall, the review is negative.
 </code></pre>
-<p>We essentially give the model “space to think” by prompting it to work through the problem before producing the final answer.
+<p>We essentially give the model "space to think" by prompting it to work through the problem before producing the final answer.
 This is especially useful for tasks that involve multiple steps or require some level of reasoning.</p>
 <blockquote>
 <p>A related idea is found in <strong>reasoning models</strong>, which also break problems into intermediate steps but do so in a different way.
@@ -854,7 +854,7 @@ print(round_probs(apply_temperature(logprobs, 2))) # [0.47, 0.33, 0.19]
 </code></pre>
 <p>The results are the same as before.</p>
 <p>So, how should you choose the optimal temperature?
-Once again, it depends on the task—and there's little rigorous research on how to choose the “best” temperature.</p>
+Once again, it depends on the task—and there's little rigorous research on how to choose the "best" temperature.</p>
 <p>Even OpenAI doesn't offer a definitive recommendation.
 To quote from the <a href="https://arxiv.org/pdf/2303.08774">GPT-4 technical report</a>:</p>
 <blockquote>
@@ -1982,7 +1982,7 @@ This can improve the retrieval process as the LLM now has more information to ge
 </code></pre>
 <p>On its own, this statement is ambiguous.
 It doesn't specify which company we're talking about, or which quarter the data refers to.
-If a user queries the knowledge base for “Example Corp Q2 2023 revenue growth,” this chunk is unlikely to surface despite the fact that it contains relevant information.</p>
+If a user queries the knowledge base for "Example Corp Q2 2023 revenue growth," this chunk is unlikely to surface despite the fact that it contains relevant information.</p>
 <p>By adding the missing context, retrieval can become much more effective.</p>
 <p>One straightforward way to add context is to prepend a generic document summary to every chunk, for example:</p>
 <pre><code>Document summary:
@@ -2017,7 +2017,7 @@ Additionally, this requires two searches: one for the document summaries and one
 <p>Yet another approach is <strong>Hypothetical Document Embeddings</strong> (HyDE for short) outlined in the paper <a href="https://arxiv.org/abs/2212.10496">Precise Zero-Shot Dense Retrieval without Relevance Labels</a> which takes a different angle altogether:</p>
 <p>Given a query, the LLM generates a hypothetical document that is likely relevant to the query, essentially a synthetic "good answer".
 We then embed this hypothetical document and perform retrieval by finding the nearest neighbors of the hypothetical document embedding instead of the query embedding.</p>
-<p>This technique works well when your corpus contains text similar in style or structure to the imagined document, since it places the search directly into the “semantic neighborhood” where relevant answers live.
+<p>This technique works well when your corpus contains text similar in style or structure to the imagined document, since it places the search directly into the "semantic neighborhood" where relevant answers live.
 However, it might fail if the general style differs too much from the actual corpus.</p>
 <p>Additionally, HyDE requires a query-time LLM generation of the hypothetical document which can be quite costly at scale.
 Therefore, this method is rarely used in practice unless you have a very specific use case.</p>
@@ -2084,12 +2084,12 @@ For example, when generating multiple-choice exercises, we want to receive a JSO
   "answer": "Paris"
 }
 </code></pre>
-<p>You can try to achieve this by changing the prompt, but even with the best models this will often not work well.
+<p>We can try to achieve this by changing the prompt, but even with the best models this will often not work well.
 Instead, what we would really like to do is to guarantee the correctly <strong>structured output</strong> by changing how the next token is generated.</p>
 <p>To achieve this, we first need to define a JSON schema which describes the output format.
 For example, let's say we want to extract information about a person from a text, specifically the name and age.
 We can specify this output using the following JSON schema:</p>
-<pre><code class="language-json">schema = {
+<pre><code class="language-python">schema = {
     "type": "object",
     "properties": {"name": {"type": "string"}, "age": {"type": "integer"}},
     "required": ["name", "age"],
@@ -2144,7 +2144,7 @@ But if we give it access to a clock, it can use that tool to determine the time 
 <p>How can we integrate an LLM with such a tool?
 The idea is that we ask the LLM to generate a <strong>tool call</strong> together with the arguments.
 We then execute the requested tool call from within our code, feed the result back to the LLM, and continue the conversation as usual.</p>
-<p>To accomplish this, we introduce a new message role called <code>tool</code>.
+<p>To accomplish this, the API provides a message role called <code>tool</code>.
 Specifically, the <code>user</code> message contains the original request, the <code>assistant</code> message includes only the tool call the LLM wants to execute, and the <code>tool</code> message contains the result of that tool call as produced by our code.</p>
 <p>Here is how a conversation including a tool call might look like:</p>
 <pre><code class="language-json">[
@@ -2171,12 +2171,16 @@ Specifically, the <code>user</code> message contains the original request, the <
     "role": "tool",
     "content": "2025-08-05 13:33:55 CEST",
     "tool_call_id": "time_tool"
+  },
+  {
+    "role": "assistant",
+    "content": "The current time in Germany (Central European Summer Time) is 13:38 on August 5, 2025"
   }
 ]
 </code></pre>
 <p>Note that the <code>assistant</code> message only includes the tool name with the arguments.
 The actual result of the tool call is part of the <code>tool</code> message, not the <code>assistant</code> message.</p>
-<p>Let's now implement the clock tool in Python.</p>
+<p>Let's give an example implementation of tool calling in Python.</p>
 <p>First, we need to define the tool.
 We have to give it a name, a description and a JSON schema for the arguments:</p>
 <pre><code class="language-python">clock_tool = {
@@ -2199,7 +2203,7 @@ We have to give it a name, a description and a JSON schema for the arguments:</p
 }
 </code></pre>
 <p>This is very similar to the JSON schema we used for structured output.
-In fact, we could implement tool calling using the regular structured output API—the fact that OpenAI uses a separate API for tool calling is mostly a technical accident.</p>
+In fact, we could implement tool calling using the regular structured output API—OpenAI’s use of a separate API for tool calling is mostly a technical detail.</p>
 <p>Next, we need to make the request to the model:</p>
 <pre><code class="language-python">messages = [
     {"role": "user", "content": "What time is it in Germany?"},
@@ -2524,8 +2528,8 @@ File content: -SNIP-
 
 The book, titled "Large Language Models for Software Engineers," serves as an introduction to the key aspects of large language models needed to build applications, focusing on practical usage rather than low-level details.
 </code></pre>
-<p>This demonstrates surprisingly rich behavior emerging from a simple loop.
-In this example, we ask the model to describe a book located in our current directory.</p>
+<p>This demonstrates surprisingly rich behavior emerging from a simple loop.</p>
+<p>In this example, we ask the model to describe a book located in our current directory.</p>
 <p>The model first decides to call the <code>list_directory</code> tool to get a list of files and directories in the current directory.
 It then looks at the result and sees that there are two files that might be relevant: <code>README.md</code> and <code>book.toml</code>.
 Finally, it uses the <code>read_file</code> tool to read the contents of the <code>README.md</code> file and <code>book.toml</code> file to answer the question.
@@ -2537,9 +2541,15 @@ There is promising work on this, but this is still an active area of research an
 </blockquote>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="benchmarking-and-evaluation"><a class="header" href="#benchmarking-and-evaluation">Benchmarking and Evaluation</a></h1>
 <h2 id="closed-ended-benchmarks"><a class="header" href="#closed-ended-benchmarks">Closed-ended Benchmarks</a></h2>
-<p>The most straightforward way to evaluate the performance of an LLM is through multiple-choice and exact-answer benchmarking.
+<p>We have already discussed that building an application that uses LLMs is hard—they can produce wrong responses, retrieve irrelevant information, and outright hallucinate.
+Therefore, before deploying an LLM-based application, we need to evaluate its quality.
+This is commonly done through <strong>benchmarking</strong>.</p>
+<p>Benchmarking is the process of evaluating the performance of an LLM or an LLM-based application on a specific task.
+There are essentially two types of benchmarks: <strong>closed-ended</strong> and <strong>open-ended</strong>.</p>
+<p>The most straightforward way to evaluate the performance of an LLM is through closed-ended benchmarks like multiple-choice and exact-answer benchmarks.
 Such a benchmark consists of a set of questions together with the expected answers.</p>
-<p>The most famous example of a multiple-choice benchmark is the <strong>MMLU</strong> (Massive Multitask Language Understanding) benchmark from the paper <a href="https://arxiv.org/abs/2009.03300">Measuring Massive Multitask Language Understanding</a>.</p>
+<p>The most famous example of a multiple-choice benchmark is the <strong>MMLU</strong> (Massive Multitask Language Understanding) benchmark from the paper <a href="https://arxiv.org/abs/2009.03300">Measuring Massive Multitask Language Understanding</a>.
+This benchmarks consists of a set of multiple-choice questions that cover a wide range of topics.</p>
 <p>Here is an example of a question from the MMLU benchmark:</p>
 <pre><code>Which of the following statements about the lanthanide elements is NOT true?
 (A) The most common oxidation state for the lanthanide elements is +3.
@@ -2547,11 +2557,13 @@ Such a benchmark consists of a set of questions together with the expected answe
 (C) All of the lanthanide elements react with aqueous acid to liberate hydrogen.
 (D) The atomic radii of the lanthanide elements increase across the period from La to Lu.
 </code></pre>
-<p>In this particular case, the correct answer is (D).
-Of course, I knew that and did not need to look this up at all.</p>
+<p>In this particular case, the correct answer is (D).</p>
+<blockquote>
+<p>Of course, I knew that and did not need to look this up at all.</p>
+</blockquote>
 <p>We can evaluate an LLM by presenting it with the questions and answer options, then checking whether its response matches the correct answer.</p>
 <p>Here is an example of how we might approach this.</p>
-<p>Let's define a function that generates a response:</p>
+<p>Let us once again define a function that generates a response:</p>
 <pre><code class="language-python">import os
 import requests
 
@@ -2714,10 +2726,16 @@ Score:
 5
 </code></pre>
 <p>We can estimate overall performance by repeating this process for a large set of questions and calculating the average score of the LLM's responses.</p>
-<p>This presents a classic chicken-and-egg problem: how can we be sure that the judge LLM is reliable?
-One way to find this out is to have a human judge evaluate the responses and check whether the human judge's score is correlated with the judge LLM's score.
+<p>This presents a classic chicken-and-egg problem: how can we be sure that the judge LLM is reliable?</p>
+<p>We can find out by having a human judge evaluate the responses and check whether the human judge's score is correlated with the judge LLM's score.
 If it is, we can be reasonably confident that the judge LLM is a good judge.
-Still, LLM-as-a-judge approaches remain difficult to calibrate and validate, and they require careful design, testing, and ongoing human oversight to ensure credibility.</p>
+Even better, we can collect multiple human judgments and check how well the LLM's score correlates with those judgments while paying special attention to the scores where all the human judges agree.</p>
+<p>Still, LLM-as-a-judge approaches remain difficult to calibrate and validate, and they require careful design, testing, and ongoing human oversight to ensure credibility.</p>
+<p>Benchmarks, whether closed- or open-ended, may sound simple in theory but are often messy in practice.
+The choice of questions, scoring method, and judging criteria all interact in subtle ways with the task at hand.
+There’s no universal recipe for a "good" benchmark — what works for a chemistry question set may fail for a creative writing task, and vice versa.
+That’s why, beyond any generic best practices, it’s worth investing the time to deeply understand your specific domain, its data, and its evaluation goals before designing or adopting a benchmark.
+A good benchmark can yield meaningful insights, while a bad one can be worse than no benchmark at all.</p>
 
                     </main>
 

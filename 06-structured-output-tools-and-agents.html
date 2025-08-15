@@ -195,12 +195,12 @@ For example, when generating multiple-choice exercises, we want to receive a JSO
   "answer": "Paris"
 }
 </code></pre>
-<p>You can try to achieve this by changing the prompt, but even with the best models this will often not work well.
+<p>We can try to achieve this by changing the prompt, but even with the best models this will often not work well.
 Instead, what we would really like to do is to guarantee the correctly <strong>structured output</strong> by changing how the next token is generated.</p>
 <p>To achieve this, we first need to define a JSON schema which describes the output format.
 For example, let's say we want to extract information about a person from a text, specifically the name and age.
 We can specify this output using the following JSON schema:</p>
-<pre><code class="language-json">schema = {
+<pre><code class="language-python">schema = {
     "type": "object",
     "properties": {"name": {"type": "string"}, "age": {"type": "integer"}},
     "required": ["name", "age"],
@@ -255,7 +255,7 @@ But if we give it access to a clock, it can use that tool to determine the time 
 <p>How can we integrate an LLM with such a tool?
 The idea is that we ask the LLM to generate a <strong>tool call</strong> together with the arguments.
 We then execute the requested tool call from within our code, feed the result back to the LLM, and continue the conversation as usual.</p>
-<p>To accomplish this, we introduce a new message role called <code>tool</code>.
+<p>To accomplish this, the API provides a message role called <code>tool</code>.
 Specifically, the <code>user</code> message contains the original request, the <code>assistant</code> message includes only the tool call the LLM wants to execute, and the <code>tool</code> message contains the result of that tool call as produced by our code.</p>
 <p>Here is how a conversation including a tool call might look like:</p>
 <pre><code class="language-json">[
@@ -282,12 +282,16 @@ Specifically, the <code>user</code> message contains the original request, the <
     "role": "tool",
     "content": "2025-08-05 13:33:55 CEST",
     "tool_call_id": "time_tool"
+  },
+  {
+    "role": "assistant",
+    "content": "The current time in Germany (Central European Summer Time) is 13:38 on August 5, 2025"
   }
 ]
 </code></pre>
 <p>Note that the <code>assistant</code> message only includes the tool name with the arguments.
 The actual result of the tool call is part of the <code>tool</code> message, not the <code>assistant</code> message.</p>
-<p>Let's now implement the clock tool in Python.</p>
+<p>Let's give an example implementation of tool calling in Python.</p>
 <p>First, we need to define the tool.
 We have to give it a name, a description and a JSON schema for the arguments:</p>
 <pre><code class="language-python">clock_tool = {
@@ -310,7 +314,7 @@ We have to give it a name, a description and a JSON schema for the arguments:</p
 }
 </code></pre>
 <p>This is very similar to the JSON schema we used for structured output.
-In fact, we could implement tool calling using the regular structured output API—the fact that OpenAI uses a separate API for tool calling is mostly a technical accident.</p>
+In fact, we could implement tool calling using the regular structured output API—OpenAI’s use of a separate API for tool calling is mostly a technical detail.</p>
 <p>Next, we need to make the request to the model:</p>
 <pre><code class="language-python">messages = [
     {"role": "user", "content": "What time is it in Germany?"},
@@ -635,8 +639,8 @@ File content: -SNIP-
 
 The book, titled "Large Language Models for Software Engineers," serves as an introduction to the key aspects of large language models needed to build applications, focusing on practical usage rather than low-level details.
 </code></pre>
-<p>This demonstrates surprisingly rich behavior emerging from a simple loop.
-In this example, we ask the model to describe a book located in our current directory.</p>
+<p>This demonstrates surprisingly rich behavior emerging from a simple loop.</p>
+<p>In this example, we ask the model to describe a book located in our current directory.</p>
 <p>The model first decides to call the <code>list_directory</code> tool to get a list of files and directories in the current directory.
 It then looks at the result and sees that there are two files that might be relevant: <code>README.md</code> and <code>book.toml</code>.
 Finally, it uses the <code>read_file</code> tool to read the contents of the <code>README.md</code> file and <code>book.toml</code> file to answer the question.

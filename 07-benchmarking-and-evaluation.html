@@ -179,9 +179,15 @@
                     <main>
                         <h1 id="benchmarking-and-evaluation"><a class="header" href="#benchmarking-and-evaluation">Benchmarking and Evaluation</a></h1>
 <h2 id="closed-ended-benchmarks"><a class="header" href="#closed-ended-benchmarks">Closed-ended Benchmarks</a></h2>
-<p>The most straightforward way to evaluate the performance of an LLM is through multiple-choice and exact-answer benchmarking.
+<p>We have already discussed that building an application that uses LLMs is hard—they can produce wrong responses, retrieve irrelevant information, and outright hallucinate.
+Therefore, before deploying an LLM-based application, we need to evaluate its quality.
+This is commonly done through <strong>benchmarking</strong>.</p>
+<p>Benchmarking is the process of evaluating the performance of an LLM or an LLM-based application on a specific task.
+There are essentially two types of benchmarks: <strong>closed-ended</strong> and <strong>open-ended</strong>.</p>
+<p>The most straightforward way to evaluate the performance of an LLM is through closed-ended benchmarks like multiple-choice and exact-answer benchmarks.
 Such a benchmark consists of a set of questions together with the expected answers.</p>
-<p>The most famous example of a multiple-choice benchmark is the <strong>MMLU</strong> (Massive Multitask Language Understanding) benchmark from the paper <a href="https://arxiv.org/abs/2009.03300">Measuring Massive Multitask Language Understanding</a>.</p>
+<p>The most famous example of a multiple-choice benchmark is the <strong>MMLU</strong> (Massive Multitask Language Understanding) benchmark from the paper <a href="https://arxiv.org/abs/2009.03300">Measuring Massive Multitask Language Understanding</a>.
+This benchmarks consists of a set of multiple-choice questions that cover a wide range of topics.</p>
 <p>Here is an example of a question from the MMLU benchmark:</p>
 <pre><code>Which of the following statements about the lanthanide elements is NOT true?
 (A) The most common oxidation state for the lanthanide elements is +3.
@@ -189,11 +195,13 @@ Such a benchmark consists of a set of questions together with the expected answe
 (C) All of the lanthanide elements react with aqueous acid to liberate hydrogen.
 (D) The atomic radii of the lanthanide elements increase across the period from La to Lu.
 </code></pre>
-<p>In this particular case, the correct answer is (D).
-Of course, I knew that and did not need to look this up at all.</p>
+<p>In this particular case, the correct answer is (D).</p>
+<blockquote>
+<p>Of course, I knew that and did not need to look this up at all.</p>
+</blockquote>
 <p>We can evaluate an LLM by presenting it with the questions and answer options, then checking whether its response matches the correct answer.</p>
 <p>Here is an example of how we might approach this.</p>
-<p>Let's define a function that generates a response:</p>
+<p>Let us once again define a function that generates a response:</p>
 <pre><code class="language-python">import os
 import requests
 
@@ -356,10 +364,16 @@ Score:
 5
 </code></pre>
 <p>We can estimate overall performance by repeating this process for a large set of questions and calculating the average score of the LLM's responses.</p>
-<p>This presents a classic chicken-and-egg problem: how can we be sure that the judge LLM is reliable?
-One way to find this out is to have a human judge evaluate the responses and check whether the human judge's score is correlated with the judge LLM's score.
+<p>This presents a classic chicken-and-egg problem: how can we be sure that the judge LLM is reliable?</p>
+<p>We can find out by having a human judge evaluate the responses and check whether the human judge's score is correlated with the judge LLM's score.
 If it is, we can be reasonably confident that the judge LLM is a good judge.
-Still, LLM-as-a-judge approaches remain difficult to calibrate and validate, and they require careful design, testing, and ongoing human oversight to ensure credibility.</p>
+Even better, we can collect multiple human judgments and check how well the LLM's score correlates with those judgments while paying special attention to the scores where all the human judges agree.</p>
+<p>Still, LLM-as-a-judge approaches remain difficult to calibrate and validate, and they require careful design, testing, and ongoing human oversight to ensure credibility.</p>
+<p>Benchmarks, whether closed- or open-ended, may sound simple in theory but are often messy in practice.
+The choice of questions, scoring method, and judging criteria all interact in subtle ways with the task at hand.
+There’s no universal recipe for a "good" benchmark — what works for a chemistry question set may fail for a creative writing task, and vice versa.
+That’s why, beyond any generic best practices, it’s worth investing the time to deeply understand your specific domain, its data, and its evaluation goals before designing or adopting a benchmark.
+A good benchmark can yield meaningful insights, while a bad one can be worse than no benchmark at all.</p>
 
                     </main>
 
