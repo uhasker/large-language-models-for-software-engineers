@@ -1507,8 +1507,8 @@ One way to address this is to use a technique called <strong>retrieval-augmented
 Such an approach is especially useful if we are working with domain-specific data that regular Large Language Models (LLMs) are not trained on.</p>
 <p>The simplest way to implement this is to find the most relevant pieces of information in a knowledge base by performing an embedding-based similarity search.
 Then, we add those documents to the prompt and generate a response.</p>
-<p>Let's look at a simple example.
-Consider the following documents about a fictitious company called "Example Corp" along with a few other pieces of information:</p>
+<p>Let's look at an example.</p>
+<p>Consider the following documents about a fictitious company called "Example Corp" along with a few other pieces of information about countries and their capitals:</p>
 <pre><code class="language-python">documents = [
     "Example Corp was founded in 2020",
     "The capital of France is Paris",
@@ -1524,7 +1524,7 @@ Consider the following documents about a fictitious company called "Example Corp
 <pre><code class="language-python">user_query = "Who is the CEO of Example Corp?"
 </code></pre>
 <p>To answer this question, we first need to retrieve the most relevant documents from the knowledge base.
-We can do this by embedding the user query and the documents and then performing a similarity search.</p>
+We can do this by embedding the user query and the documents and then performing a similarity search like we did in the previous chapter.</p>
 <p>We already know how to generate an embedding for a string:</p>
 <pre><code class="language-python">import os, requests
 
@@ -1545,23 +1545,23 @@ def generate_embedding(text):
     embedding = response_json["data"][0]["embedding"]
     return embedding
 </code></pre>
-<p>Now, we can embed the documents and the user query:</p>
+<p>We can use the <code>generate_embedding</code> function to embed the documents and the user query:</p>
 <pre><code class="language-python">document_embeddings = [generate_embedding(doc) for doc in documents]
 user_query_embedding = generate_embedding(user_query)
 </code></pre>
 <p>We can now perform a similarity search to find the most relevant documents.
 Since OpenAI embeddings are normalized, we can just use the dot product to compute the similarity between the query embedding and the document embeddings.
-Then, it's just a matter of picking the top K documents with the highest similarity to the query:</p>
+Then, it's just a matter of picking the top-k documents with the highest similarity to the query:</p>
 <pre><code class="language-python">def get_dot_product(v, w):
     return sum(v_i * w_i for v_i, w_i in zip(v, w))
 
-def get_most_similar_documents(query_embedding, document_embeddings, top_k=5):
+def get_most_similar_documents(query_embedding, document_embeddings, documents, top_k=5):
     similarities = [get_dot_product(query_embedding, doc_embedding) for doc_embedding in document_embeddings]
     most_similar_indices = sorted(range(len(similarities)), key=lambda i: similarities[i], reverse=True)[:top_k]
     return [(documents[i], similarities[i]) for i in most_similar_indices]
 </code></pre>
 <p>Now, we can use this function to retrieve the most relevant documents:</p>
-<pre><code class="language-python">most_similar_documents = get_most_similar_documents(user_query_embedding, document_embeddings)
+<pre><code class="language-python">most_similar_documents = get_most_similar_documents(user_query_embedding, document_embeddings, documents)
 for doc, similarity in most_similar_documents:
     print(f"Document: {doc}, Similarity: {round(similarity, 2)}")
 </code></pre>
@@ -1573,8 +1573,8 @@ Document: Example Corp is a technology company that develops AI solutions, Simil
 Document: The capital of France is Paris, Similarity: 0.06
 </code></pre>
 <p>The document with the highest similarity is the one that contains the exact information we are looking for—the CEO of Example Corp.
-These are followed by three documents that contain general information about Example Corp, though not the specific detail we're looking for. While still relevant, their similarity scores are noticeably lower.
-The last document contains information about France which is completely irrelevant to our query and the similarity is close to 0.</p>
+This is followed by three documents that contain general information about Example Corp, though not the specific detail we're looking for. While still relevant, their similarity scores are noticeably lower.
+The last document contains information about the capital of France which is completely irrelevant to our query and so the similarity to the query is close to 0.</p>
 <p>Now, we can use these documents to generate a response.
 We do this by constructing a prompt that includes the user query and the most relevant documents:</p>
 <pre><code class="language-python">def generate_response(user_query, most_similar_documents):
@@ -1610,12 +1610,16 @@ print(response)
 <p>This is the correct answer.</p>
 <p>To recap, RAG consists of two steps:</p>
 <ol>
-<li><strong>Retrieval</strong>—Find the most relevant documents in a knowledge base.</li>
+<li><strong>Retrieval</strong>—Given a user query, find the most relevant documents in a knowledge base.</li>
 <li><strong>Generation</strong>—Use the retrieved documents to generate a response.</li>
 </ol>
-<p><img src="./images/rag.svg" alt="RAG Architecture" /></p>
-<p>While the core concept behind RAG is relatively simple, applying it in real-world scenarios introduces additional complexity.
+<p>While the core concept behind RAG is relatively simple, applying it in real-world scenarios introduces quite a bit of complexity.
 In particular, we often work with large documents that must be broken into smaller segments, or <strong>chunks</strong>, to make them suitable for retrieval.</p>
+<blockquote>
+<p>Additionally, it is sometimes worth it to use something other than a simple similarity search to retrieve the most relevant documents.
+One example for a more sophisticated retrieval method is called Maximum Marginal Relevance which tries to find a balance between document relevance and diversity.
+This is outside the scope of this book, but you can read more about it in <a href="https://www.elastic.co/search-labs/blog/maximum-marginal-relevance-diversify-results">this Elasticsearch blog post</a>.</p>
+</blockquote>
 <h2 id="simple-chunking-strategies"><a class="header" href="#simple-chunking-strategies">Simple Chunking Strategies</a></h2>
 <p>Consider the following document:</p>
 <pre><code class="language-python">document = """
@@ -1638,7 +1642,7 @@ John's mix of tech and creativity shapes a forward-thinking culture.
 </code></pre>
 <p>How could we split this document into digestible chunks?</p>
 <p>The simplest way to chunk a document is to use <strong>fixed-size chunking</strong>.
-This method is relatively simple: we split the document into chunks of a fixed size.</p>
+This method is very straightforward: we just split the document into chunks of a fixed size.</p>
 <p>Here is how the implementation looks like:</p>
 <pre><code class="language-python">def fixed_size_chunking(document, chunk_size):
     return [document[i:i+chunk_size] for i in range(0, len(document), chunk_size)]
@@ -1673,8 +1677,7 @@ chunks = sliding_window_chunking(document, 100, 20)
 <p>This is slightly better, but still not great.</p>
 <p>The problem with both of these approaches is that they are not aware of the content of the document.
 They will always split the document at the same place regardless of the actual document structure.</p>
-<p>A more sophisticated approach is to use <strong>recursive chunking</strong> where we define a hierarchy of separators and use them to recursively split the document into smaller chunks.
-For instance, we might prioritize separators in the following order:</p>
+<p>A more sophisticated approach is to use <strong>recursive chunking</strong> where we define a hierarchy of separators like the following:</p>
 <ul>
 <li>Paragraphs (split by <code>\n\n</code>)</li>
 <li>Sentences (split by <code>.</code>)</li>
@@ -1694,9 +1697,8 @@ First, we would need to define the base case—if the text is already short enou
 <pre><code class="language-python">sep = separators[0]
 parts = text.split(sep)
 </code></pre>
-<p>Now, we have a list of parts and we can iterate over each part and check whether it is still too long.
-If that is the case, then we should recursively chunk the part again with the remaining separators.
-Otherwise, we can just add the part to the list of chunks.
+<p>Now, that we have a list of parts, we can iterate over each part and check whether it is still too long.
+If that is the case, then we should recursively chunk the part again with the remaining separators—otherwise, we can just add the part to the list of chunks.
 We also need to make sure that we skip empty parts.</p>
 <p>This approach follows a classic recursive structure and can be implemented as follows:</p>
 <pre><code class="language-python">for part in parts:
@@ -1740,8 +1742,8 @@ chunks = recursive_chunking(document, ['\n\n', '.', ','], 100)
 '\nIn his spare time, he plays guitar and reads science fiction'
 </code></pre>
 <p>Much better.</p>
-<p>Generally speaking, it is often useful to take document structure into account when performing chunking, especially when working with structured document formats such as Markdown or HTML.
-For example, if we have a Markdown document, we can use the headers to split it into sections.</p>
+<p>You hierarchy of separators will of course depend on your specific needs.</p>
+<p>Generally speaking, it is often useful to take document structure into account when performing chunking, especially when working with structured document formats such as Markdown or HTML.</p>
 <p>Consider the following Markdown document:</p>
 <pre><code># A Markdown Document
 
@@ -1757,31 +1759,25 @@ This is the background section of the document.
 
 This is the conclusion of the document.
 </code></pre>
-<p>We can use the headers to split the document into sections:</p>
+<p>Here, we would not even need to implement recursive chunking as we can just use the headers to split the document into sections:</p>
 <pre><code class="language-python">def markdown_chunking(document):
     return document.split("\n\n##")
 
 chunks = markdown_chunking(document)
 </code></pre>
-<p>A real implementation would be more complex and might account for headings of different levels, code blocks, and other constructs.
-Additionally, combining Markdown chunking with recursive chunking can produce more granular chunks.</p>
-<p>When documents are cleanly structured, simple chunking strategies can be highly effective.
-However, structure alone is not enough.
-While these methods recognize the document's syntax, they cannot capture its meaning.
-Luckily, we just learned an excellent tool for that—embeddings.</p>
+<p>A real implementation would potentially be slightly more complex and might account for headings of different levels, code blocks, and other constructs.
+Additionally, combining Markdown chunking with recursive chunking can produce more granular chunks.
+Nevertheless, chunking doesn't have to be extremely sophisticated to be effective, especially if we are working with well-structured document formats.</p>
+<p>However, sometimes, structure alone is not enough.
+While simple chunking methods recognize the document's syntax, they cannot capture its meaning which becomes a problem for unstructured documents.
+Luckily, we just learned an excellent tool to capture the semantics of text—embeddings.</p>
 <h2 id="semantic-chunking"><a class="header" href="#semantic-chunking">Semantic Chunking</a></h2>
 <p>Instead of splitting the document by specific characters, we can segment it at points where the semantic meaning changes.</p>
 <p>The simplest way to perform <strong>semantic chunking</strong> is to compute embeddings for all sentences in the document, and then split the document at points where the embedding similarity between one sentence and the next falls below a certain threshold.</p>
 <p>To implement semantic chunking, we first need a function that computes the embedding similarity between two sentences.
-We will use the dot product for this purpose because the OpenAI embeddings are expected to be normalized:</p>
+We will again just use the dot product for this purpose because the OpenAI embeddings are expected to be normalized:</p>
 <pre><code class="language-python">def dot_product(embedding1, embedding2):
     return sum(x * y for x, y in zip(embedding1, embedding2))
-
-
-def get_embedding_similarity(text1, text2):
-    embedding1 = generate_embedding(text1)
-    embedding2 = generate_embedding(text2)
-    return dot_product(embedding1, embedding2)
 </code></pre>
 <p>Now, we can implement the semantic chunking function.</p>
 <p>First, we split the document into sentences:</p>
@@ -1797,7 +1793,7 @@ We will ignore this for now for the sake of simplicity.</p>
 <p>Next, we precompute the embeddings for all sentences:</p>
 <pre><code class="language-python">embeddings = [generate_embedding(sentence) for sentence in sentences]
 </code></pre>
-<p>This is needed to avoid recomputing the embeddings for the same sentence multiple times when we iterate over the sentences.</p>
+<p>This is needed to avoid recomputing the embeddings for the same sentence multiple times when we calculate embedding similarities.</p>
 <p>Now, we can iterate over the sentences:</p>
 <pre><code class="language-python">chunks = []
 for i in range(len(sentences)):
@@ -1808,8 +1804,7 @@ for i in range(len(sentences)):
         ...
 </code></pre>
 <p>In every iteration except the first, we compute the embedding similarity between the current and previous sentence.
-If the distance is below a certain threshold, we add the sentence to the current chunk.
-Otherwise, we start a new chunk:</p>
+If the similarity is above a certain threshold, we add the sentence to the current chunk—otherwise, we start a new chunk:</p>
 <pre><code class="language-python">embedding_similarity = dot_product(embeddings[i - 1], embeddings[i])
 if embedding_similarity &lt; threshold:
     chunks.append(sentences[i])
@@ -1850,7 +1845,7 @@ for chunk in chunks:
 ...
 </code></pre>
 <p>This implementation is an oversimplification of semantic chunking.
-Usually, the threshold will be dynamic—for example, we might split at distances that are in the 95th percentile of all distances.
+Usually, the threshold will be dynamic—for example, we might where similarity is in the bottom 5% of all similarities.
 Most semantic chunking algorithms will also enforce a minimum and a maximum chunk size to avoid generating too short or too long chunks.
 We can also use context windows containing multiple sentences instead of single sentences.</p>
 <p>Additionally, the rule of when to add a chunk boundary is often more complex than the one we used in the example above.
@@ -1870,10 +1865,10 @@ $$</p>
 <p>$$
 \text{max_sim}(C, s) &gt; \text{min_sim}(C)
 $$</p>
-<p>Otherwise, we start a new chunk.</p>
+<p>If that is not the case, we start a new chunk.</p>
 <p>Let's implement this in code.</p>
 <p>First, we need to implement the function that computes the internal cohesion of a chunk.
-We must handle cases where the chunk contains only one sentence separately, for example by returning a predefined default value.</p>
+We must handle the case where the chunk contains only one sentence separately, for example by returning a predefined default value.</p>
 <pre><code class="language-python">def get_min_sim(chunk_embeddings):
     if len(chunk_embeddings) == 1:
         return 0.3
@@ -1887,15 +1882,14 @@ We must handle cases where the chunk contains only one sentence separately, for 
 </code></pre>
 <p>Next, we need to implement the function that computes the closeness of a sentence to a chunk:</p>
 <pre><code class="language-python">def get_max_sim(chunk_embeddings, sentence_embedding):
-    max_sim = 0
+    max_sim = float("-inf")
     for chunk_embedding in chunk_embeddings:
         sim = dot_product(sentence_embedding, chunk_embedding)
         max_sim = max(max_sim, sim)
     return max_sim
 </code></pre>
 <p>Now, we can implement the semantic chunking function.
-First, we need to get the sentences and their embeddings.
-Additionally, we need to initialize the first chunk and the current chunk embeddings:</p>
+First, we need to get the sentences and their embeddings and initialize the current chunk and the current chunk embeddings:</p>
 <pre><code class="language-python">sentences = get_sentences(document)
 embeddings = [generate_embedding(sentence) for sentence in sentences]
 
@@ -1903,11 +1897,11 @@ chunks = []
 current_chunk = sentences[:1]
 current_chunk_embeddings = embeddings[:1]
 </code></pre>
-<p>Now we iterate over the sentences:</p>
+<p>We then iterate over the sentences:</p>
 <pre><code class="language-python">for i in range(1, len(sentences)):
     ...
 </code></pre>
-<p>In every iteration we compute the internal cohesion and the closeness of the current sentence to the current chunk:</p>
+<p>At every iteration we compute the internal cohesion and the closeness of the current sentence to the current chunk:</p>
 <pre><code class="language-python">sentence = sentences[i]
 sentence_embedding = embeddings[i]
 min_sim = get_min_sim(current_chunk_embeddings)
@@ -1961,7 +1955,7 @@ chunks = max_min_semantic_chunking(document)
 for chunk in chunks:
     print(repr(chunk))
 </code></pre>
-<p>This will output the following:</p>
+<p>Our output will be similar to the following:</p>
 <pre><code>'John Doe is the CEO of ExampleCorp'
 "He's a skilled software engineer with a focus on scalable systems. In his spare time, he plays guitar and reads science fiction"
 'ExampleCorp was founded in 2020 and is based in San Francisco'
@@ -1977,10 +1971,10 @@ Additionally, you need to be careful with the internal cohesion of a chunk of si
 Instead of setting it to a fixed value, it is a good idea to consider the chunk and the next sentence together.</p>
 <p>Semantic methods can perform better than simple chunking methods especially for poorly structured documents.
 However, they are not a silver bullet.
-If we are dealing with a well-structured document, simple chunking methods can often be more effective.
-We must also keep in mind that semantic chunking requires computing embeddings for each sentence or sentence window in every document, which can make it unsuitable for certain applications.</p>
-<p>Therefore, in real applications, you need to weigh the benefits of semantic chunking against the cost instead of just implementing the fanciest method you know.</p>
-<h2 id="contextualized-chunking"><a class="header" href="#contextualized-chunking">Contextualized Chunking</a></h2>
+If we are dealing with a well-structured document, simple chunking methods can often be more effective.</p>
+<p>We must also keep in mind that semantic chunking requires computing embeddings for each sentence or sentence window in every document, which can make it unsuitable for certain applications.</p>
+<p>Therefore, in real applications, you need to weigh the benefits of semantic chunking against the cost instead of implementing the fanciest method you know to show-off your skills.</p>
+<h2 id="contextualizing-chunks"><a class="header" href="#contextualizing-chunks">Contextualizing Chunks</a></h2>
 <p>Apart from changing the chunking strategy, we can also improve performance by contextualizing the chunks.
 This can improve the retrieval process as the LLM now has more information to generate a response.</p>
 <p>For example, consider the following chunk from a document about Example Corp's performance in Q2 2023:</p>
@@ -1998,12 +1992,12 @@ Chunk:
 The company's revenue grew by 3% over the previous quarter.
 </code></pre>
 <p>This is easy to implement and results in every chunk being contextually enriched.</p>
-<p>However, the problem with this approach is that this will increase the size of all the chunks and also add a lot of noise to the chunks.
+<p>However, the problem with this approach is that this will increase the size of all the chunks and also add a lot of noise.
 If you embed the combined text (chunk + summary), the embedding will more likely reflect the general document summary than the specific content of the chunk.
 You are essentially repeating broad context across the entire embedding space.</p>
 <p>With the above approach, every chunk— whether it's about quarterly revenue, hiring plans, or something else entirely—will contain the phrase "This document is the SEC filing on Example Corp's performance in Q2 2023".
 While this helps ensure that a search for Example Corp and Q2 2023 won't miss the relevant chunks, it can also cause irrelevant matches.</p>
-<p>Consider an example scenario where you are searching for "Example Corp's executive bonuses".
+<p>Consider an example scenario where you are searching for "Example Corp's executive bonuses in Q2 2023".
 The most relevant chunk will probably the one that explicitly mentions those bonuses.
 However, because every chunk contains the same general document summary, chunks about unrelated topics may score highly simply because of the generic context.</p>
 <p>In short, while this method guarantees that every chunk is tied to the document, it also introduces a lot of noise, potentially reducing retrieval performance.</p>
@@ -2024,12 +2018,12 @@ Additionally, this requires two searches: one for the document summaries and one
 <p>Given a query, the LLM generates a hypothetical document that is likely relevant to the query, essentially a synthetic "good answer".
 We then embed this hypothetical document and perform retrieval by finding the nearest neighbors of the hypothetical document embedding instead of the query embedding.</p>
 <p>This technique works well when your corpus contains text similar in style or structure to the imagined document, since it places the search directly into the “semantic neighborhood” where relevant answers live.
-However, it might fail if the general style differs too much from the actual corpus.
-Additionally, this requires a query-time LLM generation of the hypothetical document which can be quite costly at scale.
-Therefore, HyDE is rarely used in practice unless you have a very specific use case.</p>
+However, it might fail if the general style differs too much from the actual corpus.</p>
+<p>Additionally, HyDE requires a query-time LLM generation of the hypothetical document which can be quite costly at scale.
+Therefore, this method is rarely used in practice unless you have a very specific use case.</p>
 <p>The most promising approach is outlined in the Anthropic paper <a href="https://www.anthropic.com/news/contextual-retrieval">Contextual Retrieval</a>.
 Here, the authors evaluated the above methods and found them lacking for most practical use cases.</p>
-<p>Instead, they propose to postprocess every chunk by adding the document or a document summary and asking an LLM to generate a contextualized chunk.</p>
+<p>Instead, they proposed to postprocess every chunk by adding the document or a document summary and asking an LLM to generate a contextualized chunk.</p>
 <p>Here is an example prompt to accomplish this:</p>
 <pre><code>&lt;document&gt;
 {{WHOLE_DOCUMENT}}
@@ -2044,29 +2038,32 @@ Please give a short succinct context to situate this chunk within the overall do
 <pre><code>This chunk is from an SEC filing on Example Corp's performance in Q2 2023; the previous quarter's revenue was $314 million. The company's revenue grew by 3% over the previous quarter.
 </code></pre>
 <p>This contextualized version retains the original detail but supplements it with just enough extra information to make retrieval more precise.</p>
+<p>Why is this method useful?</p>
 <p>Compared to simply prepending a document summary, contextual retrieval avoids blindly embedding the same generic context into every chunk.
 Instead, content can be customized to the specific chunk, which makes the chunks more specific and reduces the risk of irrelevant matches.</p>
 <p>Compared to the Document Summary Index, contextual retrieval doesn't risk missing relevant chunks because a document summary doesn't mention a specific detail we care about.
 Additionally, it doesn't require a two-step retrieval process.</p>
 <p>Compared to HyDE, contextual retrieval doesn't rely on query-time LLM generation.
-Instead, you need to contextualize the chunks once and then store the contextualized chunks.
-We don't incur any performance penalty at query time.</p>
-<p>The main drawback of contextual retrieval is that the document chunking becomes quite costly.
-Every chunk will need to be postprocessed by an LLM which can become problematic at scale.
+Instead, we need to contextualize the chunks once and then store the contextualized chunks.
+There is no performance penalty at query time.</p>
+<p>The main drawback of contextual retrieval is the high cost of document chunking, as every chunk must be postprocessed by an LLM, which can become problematic at scale.
 However, for many applications, a higher cost at document ingestion time is a worthwhile trade-off for the performance gains at query time.
 Additionally, with some model providers, you can cut down on the cost by using a technique called <strong>prompt caching</strong> where you can load the document into the cache once and then keep referencing the previously cached content.</p>
-<p>While contextual chunking tends to perform better than than other methods, choosing the right approach will still depend on your use case.
+<blockquote>
+<p>You can learn more about prompt caching <a href="https://platform.openai.com/docs/guides/prompt-caching">here</a> and <a href="https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching">here</a>.</p>
+</blockquote>
+<p>While contextual chunking tends to perform better than other methods, choosing the right approach will still depend on your use case.
 It's especially important to evaluate the performance of your retrieval system before and after contextualization and only apply it if it's worth the additional cost.</p>
 <p>Finally, contextualization is usually combined with other retrieval strategies.
 For example, here is a full pipeline suggested by the authors of the <a href="https://www.anthropic.com/news/contextual-retrieval">Contextual Retrieval</a> paper:</p>
 <ol>
 <li>Break down each document into chunks.</li>
 <li>For each chunk, contextualize it using an LLM to generate contextualized chunks.</li>
-<li>Create semantic embedding (and TF-IDF encodings) of those chunks.</li>
+<li>Create semantic embeddings (and TF-IDF encodings) of those chunks.</li>
 <li>Use the BM25 algorithm to retrieve the most relevant chunks for a given query.</li>
 <li>Use embeddings to retrieve the most relevant chunks based on semantic similarity.</li>
 <li>Combine and deduplicate the results using rank fusion.</li>
-<li>Add the top k final chunks to the prompt and generate a response.</li>
+<li>Add the top-k final chunks to the prompt and generate a response.</li>
 </ol>
 <p>This pipeline is a good fit for most practical use cases and tends to perform well in practice.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="structured-output-tools-and-agents"><a class="header" href="#structured-output-tools-and-agents">Structured Output, Tools and Agents</a></h1>
