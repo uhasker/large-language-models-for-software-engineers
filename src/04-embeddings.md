@@ -6,7 +6,7 @@ Embeddings are a way to represent text as a semantically meaningful vector of nu
 The core idea is that if two texts are similar, then their vector representations should be similar as well.
 
 For example, the embeddings of "I love programming in Python" and "I like coding in a language whose symbol is a snake" should be similar despite the fact that the texts have practically no words in common.
-This is called **semantic similarity** as opposed to syntactic similarity which is about the similarity of the sentence structure and the words used.
+This is called **semantic similarity** as opposed to syntactic similarity which is about the simple similarity of the sentence structure and the words used.
 
 Depending on the use case, you can embed words, sentences, paragraphs, or even entire documents.
 
@@ -76,13 +76,18 @@ $$
 
 where \\(\theta\\) is the angle between the vectors \\(\vec{v}\\) and \\(\vec{w}\\), \\(\vec{v} \cdot \vec{w}\\) is the dot product of the vectors and \\(\|\vec{v}\|\\) and \\(\|\vec{w}\|\\) are their norms.
 
+![Cosine Similarity](images/cosine_similarity.png)
+
 As a reminder, the dot product (also called the inner product) of two vectors is defined as:
 
 $$
 \vec{v} \cdot \vec{w} = \sum_{i=1}^{n} v_i w_i
 $$
 
-And the norm of a vector is defined as:
+> If we get very technical, the dot product is a concrete example of an inner product which is a more general concept.
+> In the context of embeddings, however, these two terms are used interchangeably.
+
+The norm of a vector is defined as:
 
 $$
 \|\vec{v}\| = \sqrt{\sum_{i=1}^{n} v_i^2}
@@ -97,7 +102,7 @@ The cosine similarity is:
 Generally speaking, the closer the cosine similarity is to 1, the more similar the vectors are.
 The closer it is to -1, the more dissimilar they are.
 
-Here is an example implementation of cosine similarity:
+Here is how we could implement the cosine similarity in Python:
 
 ```python
 def get_norm(v):
@@ -118,15 +123,11 @@ print(get_dot_product(v, w)) # 1
 print(get_cosine_similarity(v, w)) # 0.707...
 ```
 
-This is how the cosine similarity between the two vectors looks like:
-
-![Cosine Similarity](images/cosine_similarity.png)
-
 Note that you typically shouldn't use plain Python implementations for mathematical operations like norms or dot products.
 Instead, rely on libraries like NumPy or SciPy because the latter will **vectorize** the operations which is much more efficient than using regular Python loops.
 
 Developers often use the dot product—or even Euclidean distance—to measure similarity instead of the cosine similarity.
-This works because embeddings are usually normalized to unit length.
+This works because embeddings are usually normalized to unit length, i.e. they have a norm of 1.
 
 Let's verify that this is true for the embeddings produced by OpenAI:
 
@@ -136,7 +137,8 @@ import math
 def get_norm(embedding):
     return math.sqrt(sum(x ** 2 for x in embedding))
 
-# Here embedding is some embedding from OpenAI (for example, you can use the embedding from the previous section)
+# Here embedding is some embedding from OpenAI
+# (for example, you can use the embedding from the previous section)
 print(get_norm(embedding)) # 1.0
 ```
 
@@ -173,9 +175,12 @@ To address this, vector databases use specialized algorithms to accelerate the s
 One of the most widely used algorithms for efficient similarity search is **IVFFlat** (short for InVerted File Flat).
 
 The IVFFlat algorithm works by partitioning the embedding space into cells with centroids.
-At search time, the algorithm first finds the nearest centroids and then performs a search only inside those cells.
 
 ![IVFFlat Cells](images/ivfflat_cells.png)
+
+At search time, the algorithm first finds the nearest centroids and then performs a search only inside those cells.
+
+![IVFFlat Search](images/ivfflat_search.png)
 
 In other words, the algorithm performs the following steps to find the best embeddings for a query embedding \\(\vec{v}\\):
 
@@ -184,16 +189,15 @@ In other words, the algorithm performs the following steps to find the best embe
 3. Calculate the distance between \\(\vec{v}\\) and all embeddings within the cells corresponding to the \\(k\\) centroids from step 2.
 4. Return the embeddings with the smallest distance to \\(\vec{v}\\).
 
-![IVFFlat Search](images/ivfflat_search.png)
-
 The cells and their centroids must be learned from the data in advance, which is why we typically build the index only after inserting some initial data.
 
 It's important to note that, like most similarity search algorithms used in vector databases, IVFFlat performs only an **approximate nearest neighbor search**.
 As a result, it may not always return the exact nearest neighbors, depending on the location of the query embedding in the vector space.
 This trade-off prioritizes performance over absolute accuracy.
 
-We commonly use the `pgvector` extension for Postgres to store the embeddings.
-Let's explore how to use it.
+This also means that unlike traditional database indices, a bad IVFFlat index can reduce the search quality, so you need to carefully tune its parameters and build it on a representative dataset.
+
+Although dedicated vector databases like Faiss exist, we will explore the `pgvector` extension for Postgres to store embeddings in this section.
 
 First, start a local PostgreSQL database:
 
@@ -227,7 +231,7 @@ If the extension is not enabled, enable it:
 CREATE EXTENSION vector;
 ```
 
-Let's now create a table to store the embeddings:
+Now, create a table to store the embeddings:
 
 ```sql
 CREATE TABLE items (
@@ -362,11 +366,11 @@ SELECT * FROM items LIMIT 10;
 SELECT COUNT(*) FROM items;
 ```
 
-Let's perform a simple similarity search and find the 5 nearest neighbors of the zero vector:
+Let's perform a simple similarity search and find the 5 nearest neighbors of the vector `[1, 1, 1, ...]`:
 
 ```sql
 WITH q AS (
-  SELECT array_fill(0.0::float8, ARRAY[512])::vector(512) AS v
+  SELECT array_fill(1::float8, ARRAY[512])::vector(512) AS v
 )
 SELECT id, content
 FROM   items, q
@@ -374,8 +378,7 @@ ORDER  BY embedding <=> q.v
 LIMIT  5;
 ```
 
-This takes roughly 2.7 seconds on my machine—your results may vary.
-
+This takes a few seconds to complete.
 If we explain the query by prefixing it with `EXPLAIN ANALYZE`, we can see that the query is performing a sequential scan of the table:
 
 ```
@@ -386,14 +389,20 @@ Sort Method: top-N heapsort [...]
 ```
 
 We can now add an IVFFlat index to the table.
-When creating the index, we can specify two parameters—`lists` which determines the number of cells to use and `probes` which determines the number of nearest cells to consider:
+When creating the index, we choose the number of `lists` which determines the number of cells to use.
+Then, at query time, we choose `probes` which determines the number of nearest cells to consider.
+
+The official documentation recommends settings `lists` to `rows / 1000` for up to 1M rows and `lists` for `sqrt(rows)` for over 1M rows.
+Additionally, it recommends setting `probes` to `sqrt(lists)` as a good starting point.
+
+Let's create the index with the recommended parameters:
 
 ```sql
-CREATE INDEX ON items USING ivfflat (embedding vector_cosine_ops) WITH (lists = 200);
-SET ivfflat.probes = 100;
+CREATE INDEX ON items USING ivfflat (embedding vector_cosine_ops) WITH (lists = 1000);
+SET ivfflat.probes = 30;
 ```
 
-This command will take a while because it has the build the index from scratch—the cells and their centroids have to be learned from the data.
+This command will take a while because it has to build the index from scratch—the cells and their centroids have to be learned from the data.
 
 Now, let's run a similarity search again:
 
@@ -407,8 +416,7 @@ ORDER  BY embedding <=> q.v
 LIMIT  5;
 ```
 
-This takes roughly 0.7 seconds on my machine—yours may be different.
-This is a significant improvement in query performance and this improvement will only become more pronounced as the number of embeddings grows.
+This should result in a significant improvement in query performance compared to the sequential scan and this improvement will only become more pronounced as the number of embeddings grows.
 
 If we explain the query by prefixing it with `EXPLAIN ANALYZE`, we can see that the query is now using the IVFFlat index:
 
@@ -436,7 +444,21 @@ After all, the core idea behind all vector databases is the same: they enable us
 
 The problem with a pure embedding search is that we are not guaranteed to find potentially important exact matches.
 
-For example, consider a customer support ticket containing an identifier such as "TS-01".
+Let's consider the following document collection:
+
+```python
+documents = [
+    "TS-01 Can't access my account with my password",
+    "TS-02 My password is not working and I don't know what it is so I need help",
+    "TS-03 I need help with my account and I can't log in",
+    "TS-04 I am having trouble with my setup and I don't know what it is",
+    "TS-05 I can't access my account with my password",
+    "TS-06 I need help",
+]
+documents = [doc.split() for doc in documents]
+```
+
+Take a customer support ticket containing an identifier such as "TS-01".
 An embedding search might miss this exact match because embeddings are high-dimensional vectors whose results are difficult to interpret and do not guarantee the retrieval of critical terms.
 Therefore, in such a case it would be useful to combine the results of a semantic search with those of a traditional keyword search.
 
@@ -475,23 +497,9 @@ We can see that rare words like "TS-01" or "password" have a higher IDF score th
 
 Technically, the IDF score measures specificity, not importance.
 After all, just because a word is rare doesn't necessarily mean it's important.
-However, IDF is often used in algorithms that estimate word importance, because it increases the weight of rare terms—a common goal when building search engines.
+However, IDF is often used in algorithms that estimate word importance, because it increases the weight of rare terms—often desirable when building search engines.
 
-Now, we can turn to the main topic of this section: exact match search, which we will implement using the BM25 algorithm.
-
-Let's consider the following document collection:
-
-```python
-documents = [
-    "TS-01 Can't access my account with my password",
-    "TS-02 My password is not working and I don't know what it is so I need help",
-    "TS-03 I need help with my account and I can't log in",
-    "TS-04 I am having trouble with my setup and I don't know what it is",
-    "TS-05 I can't access my account with my password",
-    "TS-06 I need help",
-]
-documents = [doc.split() for doc in documents]
-```
+Now, we can turn to the main topic of this section: exact match search, which we will implement using the **BM25** algorithm.
 
 The core idea of BM25 is that the relevance of a document to a query depends on the frequency of the query terms in the document.
 
@@ -526,7 +534,7 @@ $$
 \text{score}(q_i, d) = \text{IDF}(q_i) \cdot \frac{f(q_i, d) \cdot (k_1 + 1)}{f(q_i, d) + k_1 \cdot (1 - b + b \cdot \frac{|d|}{avgdl})}
 $$
 
-Here \\(k_1\\) and \\(b\\) are parameters that we can tune, typically setting them to \\(1.2 < k_1 < 2.0\\) and \\(0.75 < b < 1.0\\).
+Here \\(k_1\\) and \\(b\\) are parameters that we can tune, typically setting them to \\(k_1 \in [1.2, 2.0]\\) and \\(b \in [0.75, 1.0]\\).
 Additionally, \\(avgdl\\) is the average document length in the document collection.
 
 Let's implement this in Python:
@@ -583,17 +591,16 @@ For real-world applications, however, we would use a more sophisticated method, 
 Now that we have an additional way to score documents by considering exact matches, we need to meaningfully combine the results of the semantic search and the keyword search.
 
 Theoretically, we could take the union of the semantic search results and the keyword search results.
-However, this approach would either return an excessively large set of documents or discard too many.
-Ranking the documents by relevance is therefore essential, and this is straightforward when working with a single search type.
+However, this approach would either return an excessively large set of documents or discard too many items.
+Ranking the retrieved documents by relevance is therefore essential, and this is straightforward when working with a single search type.
+For example, for the semantic search, we can use the cosine similarity to rank the documents, while for the keyword search, we can use the BM25 score.
 
-For example, for the semantic search, we can use the cosine similarity to rank the documents.
-For the keyword search, we can use the BM25 score.
 But how can we rank documents that we have retrieved from two or more search types?
 This is where **rank fusion** comes in.
 
 The simplest rank fusion technique is **reciprocal rank fusion**.
 For each retriever, we compute the reciprocal of the rank of the document plus a constant and sum the results.
-The smaller the ranks, the higher the final score will be:
+The smaller the ranks for a document, the more important it is, and the higher the final score will be:
 
 $$
 \text{score}(d) = \sum_{r \in \text{retrievers}} \frac{1}{k + \text{rank}_r(d)}
