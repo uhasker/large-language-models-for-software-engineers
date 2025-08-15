@@ -1550,7 +1550,7 @@ def generate_embedding(text):
 user_query_embedding = generate_embedding(user_query)
 </code></pre>
 <p>We can now perform a similarity search to find the most relevant documents.
-Since OpenAI embeddings are normalized, we can use the dot product to compute the similarity between the query embedding and the document embeddings.
+Since OpenAI embeddings are normalized, we can just use the dot product to compute the similarity between the query embedding and the document embeddings.
 Then, it's just a matter of picking the top K documents with the highest similarity to the query:</p>
 <pre><code class="language-python">def get_dot_product(v, w):
     return sum(v_i * w_i for v_i, w_i in zip(v, w))
@@ -1981,9 +1981,56 @@ If we are dealing with a well-structured document, simple chunking methods can o
 We must also keep in mind that semantic chunking requires computing embeddings for each sentence or sentence window in every document, which can make it unsuitable for certain applications.</p>
 <p>Therefore, in real applications, you need to weigh the benefits of semantic chunking against the cost instead of just implementing the fanciest method you know.</p>
 <h2 id="contextualized-chunking"><a class="header" href="#contextualized-chunking">Contextualized Chunking</a></h2>
-<p>Apart from changing the chunking strategy, we can also improve performance by contextualizing the chunks.</p>
-<p>One possible approach is outlined in the Anthropic paper <a href="https://www.anthropic.com/news/contextual-retrieval">Contextual Retrieval</a> where the authors propose to postprocess every chunk by adding the document or a document summary and asking an LLM to generate a contextualized chunk.</p>
-<p>Here is how their prompt looks like:</p>
+<p>Apart from changing the chunking strategy, we can also improve performance by contextualizing the chunks.
+This can improve the retrieval process as the LLM now has more information to generate a response.</p>
+<p>For example, consider the following chunk from a document about Example Corp's performance in Q2 2023:</p>
+<pre><code>The company's revenue grew by 3% over the previous quarter.
+</code></pre>
+<p>On its own, this statement is ambiguous.
+It doesn't specify which company we're talking about, or which quarter the data refers to.
+If a user queries the knowledge base for “Example Corp Q2 2023 revenue growth,” this chunk is unlikely to surface despite the fact that it contains relevant information.</p>
+<p>By adding the missing context, retrieval can become much more effective.</p>
+<p>One straightforward way to add context is to prepend a generic document summary to every chunk, for example:</p>
+<pre><code>Document summary:
+This document is the SEC filing on Example Corp's performance in Q2 2023.
+
+Chunk:
+The company's revenue grew by 3% over the previous quarter.
+</code></pre>
+<p>This is easy to implement and results in every chunk being contextually enriched.</p>
+<p>However, the problem with this approach is that this will increase the size of all the chunks and also add a lot of noise to the chunks.
+If you embed the combined text (chunk + summary), the embedding will more likely reflect the general document summary than the specific content of the chunk.
+You are essentially repeating broad context across the entire embedding space.</p>
+<p>With the above approach, every chunk— whether it's about quarterly revenue, hiring plans, or something else entirely—will contain the phrase "This document is the SEC filing on Example Corp's performance in Q2 2023".
+While this helps ensure that a search for Example Corp and Q2 2023 won't miss the relevant chunks, it can also cause irrelevant matches.</p>
+<p>Consider an example scenario where you are searching for "Example Corp's executive bonuses".
+The most relevant chunk will probably the one that explicitly mentions those bonuses.
+However, because every chunk contains the same general document summary, chunks about unrelated topics may score highly simply because of the generic context.</p>
+<p>In short, while this method guarantees that every chunk is tied to the document, it also introduces a lot of noise, potentially reducing retrieval performance.</p>
+<p>The <strong>Document Summary Index</strong> approach outlined in <a href="https://www.llamaindex.ai/blog/a-new-document-summary-index-for-llm-powered-qa-systems-9a32ece2f9ec">A New Document Summary Index for LLM-powered QA Systems</a> tries to mitigate this problem by storing document summaries separately.</p>
+<p>Here is how it works:</p>
+<ol>
+<li>Generate an unstructured text summary for each document.</li>
+<li>Perform chunking as usual.</li>
+<li>For every chunk, store a mapping to the document summary.</li>
+<li>During retrieval, first retrieve the best-matching documents by searching the document summaries.
+Then, search only for the chunks that belong to the retrieved documents.</li>
+</ol>
+<p>The chunks are kept small and focused, while still using document-level context to improve retrieval.
+This reduces irrelevant matches from generic document summaries.</p>
+<p>The trade-off is that you will miss relevant chunks in documents whose summaries don't seem related to the query but contain useful details in isolated sections.
+Additionally, this requires two searches: one for the document summaries and one for the chunks.</p>
+<p>Yet another approach is <strong>Hypothetical Document Embeddings</strong> (HyDE for short) outlined in the paper <a href="https://arxiv.org/abs/2212.10496">Precise Zero-Shot Dense Retrieval without Relevance Labels</a> which takes a different angle altogether:</p>
+<p>Given a query, the LLM generates a hypothetical document that is likely relevant to the query, essentially a synthetic "good answer".
+We then embed this hypothetical document and perform retrieval by finding the nearest neighbors of the hypothetical document embedding instead of the query embedding.</p>
+<p>This technique works well when your corpus contains text similar in style or structure to the imagined document, since it places the search directly into the “semantic neighborhood” where relevant answers live.
+However, it might fail if the general style differs too much from the actual corpus.
+Additionally, this requires a query-time LLM generation of the hypothetical document which can be quite costly at scale.
+Therefore, HyDE is rarely used in practice unless you have a very specific use case.</p>
+<p>The most promising approach is outlined in the Anthropic paper <a href="https://www.anthropic.com/news/contextual-retrieval">Contextual Retrieval</a>.
+Here, the authors evaluated the above methods and found them lacking for most practical use cases.</p>
+<p>Instead, they propose to postprocess every chunk by adding the document or a document summary and asking an LLM to generate a contextualized chunk.</p>
+<p>Here is an example prompt to accomplish this:</p>
 <pre><code>&lt;document&gt;
 {{WHOLE_DOCUMENT}}
 &lt;/document&gt;
@@ -1993,18 +2040,35 @@ Here is the chunk we want to situate within the whole document
 &lt;/chunk&gt;
 Please give a short succinct context to situate this chunk within the overall document for the purposes of improving search retrieval of the chunk. Answer only with the succinct context and nothing else.
 </code></pre>
-<p>By adding context to chunks, we can improve the retrieval process as the LLM now has more information to generate a response.
-For example, take the following chunk:</p>
-<pre><code>The company's revenue grew by 3% over the previous quarter.
+<p>This could result in a contextualized chunk like the following:</p>
+<pre><code>This chunk is from an SEC filing on Example Corp's performance in Q2 2023; the previous quarter's revenue was $314 million. The company's revenue grew by 3% over the previous quarter.
 </code></pre>
-<p>This chunk does not provide much context and it would be hard to retrieve it from a knowledge base.
-However, if we contextualize it, it becomes much easier to retrieve:</p>
-<pre><code>This chunk is from an SEC filing on ACME corp's performance in Q2 2023; the previous quarter's revenue was $314 million. The company's revenue grew by 3% over the previous quarter.
-</code></pre>
-<p>A similarity search for a query asking about the revenue growth of ACME corp would most likely miss the first chunk, but probably retrieve the second one.</p>
-<p>There are many ways to approach contextualization and the correct approach depends on the use case.
-Additionally, contextualization of chunks adds a lot of overhead during the chunking process.
-It is therefore important to weigh the benefits of contextualization against the cost.</p>
+<p>This contextualized version retains the original detail but supplements it with just enough extra information to make retrieval more precise.</p>
+<p>Compared to simply prepending a document summary, contextual retrieval avoids blindly embedding the same generic context into every chunk.
+Instead, content can be customized to the specific chunk, which makes the chunks more specific and reduces the risk of irrelevant matches.</p>
+<p>Compared to the Document Summary Index, contextual retrieval doesn't risk missing relevant chunks because a document summary doesn't mention a specific detail we care about.
+Additionally, it doesn't require a two-step retrieval process.</p>
+<p>Compared to HyDE, contextual retrieval doesn't rely on query-time LLM generation.
+Instead, you need to contextualize the chunks once and then store the contextualized chunks.
+We don't incur any performance penalty at query time.</p>
+<p>The main drawback of contextual retrieval is that the document chunking becomes quite costly.
+Every chunk will need to be postprocessed by an LLM which can become problematic at scale.
+However, for many applications, a higher cost at document ingestion time is a worthwhile trade-off for the performance gains at query time.
+Additionally, with some model providers, you can cut down on the cost by using a technique called <strong>prompt caching</strong> where you can load the document into the cache once and then keep referencing the previously cached content.</p>
+<p>While contextual chunking tends to perform better than than other methods, choosing the right approach will still depend on your use case.
+It's especially important to evaluate the performance of your retrieval system before and after contextualization and only apply it if it's worth the additional cost.</p>
+<p>Finally, contextualization is usually combined with other retrieval strategies.
+For example, here is a full pipeline suggested by the authors of the <a href="https://www.anthropic.com/news/contextual-retrieval">Contextual Retrieval</a> paper:</p>
+<ol>
+<li>Break down each document into chunks.</li>
+<li>For each chunk, contextualize it using an LLM to generate contextualized chunks.</li>
+<li>Create semantic embedding (and TF-IDF encodings) of those chunks.</li>
+<li>Use the BM25 algorithm to retrieve the most relevant chunks for a given query.</li>
+<li>Use embeddings to retrieve the most relevant chunks based on semantic similarity.</li>
+<li>Combine and deduplicate the results using rank fusion.</li>
+<li>Add the top k final chunks to the prompt and generate a response.</li>
+</ol>
+<p>This pipeline is a good fit for most practical use cases and tends to perform well in practice.</p>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="structured-output-tools-and-agents"><a class="header" href="#structured-output-tools-and-agents">Structured Output, Tools and Agents</a></h1>
 <h2 id="structured-output"><a class="header" href="#structured-output">Structured Output</a></h2>
 <p>We have already discussed how to use LLMs to generate text output.
