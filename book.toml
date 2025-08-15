@@ -6,6 +6,3 @@ title = "Large Language Models for Software Engineers"
 
 [output.html]
 mathjax-support = true
-
-[output.pdf]
-mathjax-support = true
