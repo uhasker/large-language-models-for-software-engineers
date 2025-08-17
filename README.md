@@ -24,7 +24,13 @@ We specifically cover:
 
 Our goal is to equip you with the fundementals that you need to know to design, implement and evaluate your own LLM-powered applications.
 
-## Building
+## Reading the Book
+
+You can read the book online [here](https://github.com/uhasker/large-language-models-for-software-engineers).
+
+You also download a PDF version [here](https://github.com/uhasker/large-language-models-for-software-engineers/releases/download/v0.1.0/book.pdf).
+
+## Building the Book
 
 The book uses mdBook for the actual build process.
 To run it locally, you can use the following command:
