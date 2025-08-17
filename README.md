@@ -28,7 +28,7 @@ Our goal is to equip you with the fundementals that you need to know to design, 
 
 You can read the book online [here](https://uhasker.github.io/large-language-models-for-software-engineers/).
 
-You also download a PDF version [here](https://github.com/uhasker/large-language-models-for-software-engineers/releases/download/v0.1.0/book.pdf).
+You also download a PDF version [here](https://github.com/uhasker/large-language-models-for-software-engineers/releases/download/v0.1.1/book.pdf).
 
 ## Building the Book
 
