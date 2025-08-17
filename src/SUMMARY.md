@@ -1,5 +1,6 @@
 # Summary
 
+- [Introduction](./introduction.md)
 - [Text In, Text Out](./01-text-in-text-out.md)
 - [Tokenization](./02-tokenization.md)
 - [Generating the Next Token](./03-generating-the-next-token.md)
