@@ -178,7 +178,26 @@
 
                 <div id="content" class="content">
                     <main>
-                        <h1 id="text-in-text-out"><a class="header" href="#text-in-text-out">Text In, Text Out</a></h1>
+                        <h1 id="introduction"><a class="header" href="#introduction">Introduction</a></h1>
+<p>Large Language Models have become a hot topic in the last few years.
+From simple autocomplete to agentic workflows, they have unlocked a wide range of applications that weren't possible just a few years ago.</p>
+<p>It feels like every day there is a new hot model from OpenAI, Google, Meta, Anthropic, etc. that everyone is talking about.
+But for most software engineers that don't work at a frontier AI lab, the challenge is not how to train or host these massive models, but how to actually use them to build a functioning product.</p>
+<p>This book, <strong>Large Language Models for Software Engineers</strong>, is a practical guide to do exactly that.
+We are not going to dive into the low-level details of neural network architecture.
+Instead, we assume that you already have access to an API for a hosted LLM and you are tasked to build something valuable with it.</p>
+<p>We specifically cover:</p>
+<ul>
+<li>the core <a href="./01-text-in-text-out.html">text in, text out</a> interface of LLMs</li>
+<li>how <a href="./02-tokenization.html">tokenization</a> works</li>
+<li>how to <a href="./03-generating-the-next-token.html">generate the next token</a></li>
+<li>how <a href="./04-embeddings.html">embeddings</a> work</li>
+<li>how to use <a href="./05-retrieval-augmented-generation.html">RAG</a> to improve quality</li>
+<li>how to use <a href="./06-structured-output-tools-and-agents.html">structured outputs and tool calls</a> to build agents</li>
+<li>how to <a href="./07-benchmarking-and-evaluation.html">benchmark and evaluate</a> LLMs</li>
+</ul>
+<p>Our goal is to equip you with the fundementals that you need to know to design, implement and evaluate your own LLM-powered applications.</p>
+<div style="break-before: page; page-break-before: always;"></div><h1 id="text-in-text-out"><a class="header" href="#text-in-text-out">Text In, Text Out</a></h1>
 <h2 id="the-core-llm-interface"><a class="header" href="#the-core-llm-interface">The Core LLM Interface</a></h2>
 <p>At their core, <strong>Large Language Models</strong> (LLMs) are remarkably simple—they take text as input and produce text as output.
 Put differently, given a <strong>prompt</strong>, they generate a <strong>completion</strong> for that prompt.</p>
